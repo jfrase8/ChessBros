@@ -5594,13 +5594,14 @@ struct ImGuiResizeGripDef
     ImVec2  CornerPosN;
     ImVec2  InnerDir;
     int     AngleMin12, AngleMax12;
+    ImDrawFlags CornerFlags;
 };
 static const ImGuiResizeGripDef resize_grip_def[4] =
 {
-    { ImVec2(1, 1), ImVec2(-1, -1), 0, 3 },  // Lower-right
-    { ImVec2(0, 1), ImVec2(+1, -1), 3, 6 },  // Lower-left
-    { ImVec2(0, 0), ImVec2(+1, +1), 6, 9 },  // Upper-left (Unused)
-    { ImVec2(1, 0), ImVec2(-1, +1), 9, 12 }  // Upper-right (Unused)
+    { ImVec2(1, 1), ImVec2(-1, -1), 0, 3, ImDrawFlags_RoundCornersBottomRight }, // Lower-right
+    { ImVec2(0, 1), ImVec2(+1, -1), 3, 6, ImDrawFlags_RoundCornersBottomLeft },  // Lower-left
+    { ImVec2(0, 0), ImVec2(+1, +1), 6, 9, ImDrawFlags_RoundCornersTopLeft },  // Upper-left (Unused)
+    { ImVec2(1, 0), ImVec2(-1, +1), 9,12, ImDrawFlags_RoundCornersTopRight }, // Upper-right (Unused)
 };
 
 // Data for resizing from borders
@@ -5617,6 +5618,51 @@ static const ImGuiResizeBorderDef resize_border_def[4] =
     { ImVec2(0, +1), ImVec2(0, 0), ImVec2(1, 0), IM_PI * 1.50f }, // Up
     { ImVec2(0, -1), ImVec2(1, 1), ImVec2(0, 1), IM_PI * 0.50f }  // Down
 };
+
+static void AddResizeGrip(ImDrawList* dl, const ImVec2& corner, unsigned int rad, int corners_flags, ImU32 col)
+{
+    ImTextureID tex = dl->_Data->Font->ContainerAtlas->TexID;
+    IM_ASSERT(tex == dl->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
+
+    switch (corners_flags)
+    {
+    case ImDrawFlags_RoundCornersTopLeft:
+    case ImDrawFlags_RoundCornersTopRight:
+    case ImDrawFlags_RoundCornersBottomLeft:
+    case ImDrawFlags_RoundCornersBottomRight:
+        break;
+    default:
+    {
+        IM_ASSERT("Invalid ImDrawCornerFlags for corner quad. {Top,Bot}{Left,Right} pick exactly one of each!");
+        return;
+    }
+    }
+
+    const ImVec4& uvs = (*dl->_Data->TexUvRoundCornerFilled)[rad - 1];
+
+    // NOTE: test performance using locals instead of array
+    const ImVec2 uv[] =
+    {
+        ImVec2(ImLerp(uvs.x, uvs.z, 0.5f), ImLerp(uvs.y, uvs.w, 0.5f)),
+        ImVec2(uvs.x, uvs.w),
+        ImVec2(uvs.z, uvs.w),
+    };
+
+    ImVec2 in_x = corner, in_y = corner;
+    if (corners_flags & (ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight))
+        in_y.y += rad;
+    else if (corners_flags & (ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight))
+        in_y.y -= rad;
+    if (corners_flags & (ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersBottomLeft))
+        in_x.x += rad;
+    else if (corners_flags & (ImDrawFlags_RoundCornersTopRight | ImDrawFlags_RoundCornersBottomRight))
+        in_x.x -= rad;
+
+    const ImVec2 mid = ImVec2(ImLerp(in_x.x, in_y.x, 0.5f), ImLerp(in_x.y, in_y.y, 0.5f));
+
+    dl->PrimReserve(6, 4);
+    dl->PrimQuadUV(mid, in_y, corner, in_x, uv[0], uv[1], uv[2], uv[1], col);
+}
 
 static ImRect GetResizeBorderRect(ImGuiWindow* window, int border_n, float perp_padding, float thickness)
 {
@@ -5903,10 +5949,20 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
                     continue;
                 const ImGuiResizeGripDef& grip = resize_grip_def[resize_grip_n];
                 const ImVec2 corner = ImLerp(window->Pos, window->Pos + window->Size, grip.CornerPosN);
-                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(window_border_size, resize_grip_draw_size) : ImVec2(resize_grip_draw_size, window_border_size)));
-                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(resize_grip_draw_size, window_border_size) : ImVec2(window_border_size, resize_grip_draw_size)));
-                window->DrawList->PathArcToFast(ImVec2(corner.x + grip.InnerDir.x * (window_rounding + window_border_size), corner.y + grip.InnerDir.y * (window_rounding + window_border_size)), window_rounding, grip.AngleMin12, grip.AngleMax12);
-                window->DrawList->PathFillConvex(col);
+                if (g.IO.KeyAlt)
+                {
+                    ImVec2 grip_corner = corner;
+                    grip_corner.x += grip.InnerDir.x * window_border_size;
+                    grip_corner.y += grip.InnerDir.y * window_border_size;
+                    AddResizeGrip(window->DrawList, grip_corner, (unsigned int)window_rounding, grip.CornerFlags, resize_grip_col[resize_grip_n]);
+                }
+                else
+                {
+                    window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(window_border_size, resize_grip_draw_size) : ImVec2(resize_grip_draw_size, window_border_size)));
+                    window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(resize_grip_draw_size, window_border_size) : ImVec2(window_border_size, resize_grip_draw_size)));
+                    window->DrawList->PathArcToFast(ImVec2(corner.x + grip.InnerDir.x * (window_rounding + window_border_size), corner.y + grip.InnerDir.y * (window_rounding + window_border_size)), window_rounding, grip.AngleMin12, grip.AngleMax12);
+                    window->DrawList->PathFillConvex(col);
+                }
             }
         }
 
@@ -6965,6 +7021,8 @@ void ImGui::SetCurrentFont(ImFont* font)
     ImFontAtlas* atlas = g.Font->ContainerAtlas;
     g.DrawListSharedData.TexUvWhitePixel = atlas->TexUvWhitePixel;
     g.DrawListSharedData.TexUvLines = atlas->TexUvLines;
+    g.DrawListSharedData.TexUvRoundCornerFilled = &atlas->TexUvRoundCornerFilled;
+    g.DrawListSharedData.TexUvRoundCornerStroked = &atlas->TexUvRoundCornerStroked;
     g.DrawListSharedData.Font = g.Font;
     g.DrawListSharedData.FontSize = g.FontSize;
 }

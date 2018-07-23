@@ -762,6 +762,10 @@ struct IMGUI_API ImDrawListSharedData
     ImU8            CircleSegmentCounts[64];    // Precomputed segment count for given radius before we calculate it dynamically (to avoid calculation overhead)
     const ImVec4*   TexUvLines;                 // UV of anti-aliased lines in the atlas
 
+    // FIXME-ROUNDSHAPES: WIP + need to remove CircleVtx12 before PR
+    ImVector<ImVec4>* TexUvRoundCornerFilled;   // UV of filled round corner quad in the atlas
+    ImVector<ImVec4>* TexUvRoundCornerStroked;  // UV of stroked round corner quad in the atlas
+
     ImDrawListSharedData();
     void SetCircleTessellationMaxError(float max_error);
 };
