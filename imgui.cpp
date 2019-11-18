@@ -5622,25 +5622,10 @@ static const ImGuiResizeBorderDef resize_border_def[4] =
 static void AddResizeGrip(ImDrawList* dl, const ImVec2& corner, unsigned int rad, int corners_flags, ImU32 col)
 {
     ImTextureID tex = dl->_Data->Font->ContainerAtlas->TexID;
-    IM_ASSERT(tex == dl->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
-
-    switch (corners_flags)
-    {
-    case ImDrawFlags_RoundCornersTopLeft:
-    case ImDrawFlags_RoundCornersTopRight:
-    case ImDrawFlags_RoundCornersBottomLeft:
-    case ImDrawFlags_RoundCornersBottomRight:
-        break;
-    default:
-    {
-        IM_ASSERT("Invalid ImDrawCornerFlags for corner quad. {Top,Bot}{Left,Right} pick exactly one of each!");
-        return;
-    }
-    }
+    IM_ASSERT(tex == dl->_TextureIdStack.back());       // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
+    IM_ASSERT(ImIsPowerOfTwo(corners_flags));   // Allow a single corner to be specified here.
 
     const ImVec4& uvs = (*dl->_Data->TexUvRoundCornerFilled)[rad - 1];
-
-    // NOTE: test performance using locals instead of array
     const ImVec2 uv[] =
     {
         ImVec2(ImLerp(uvs.x, uvs.z, 0.5f), ImLerp(uvs.y, uvs.w, 0.5f)),
@@ -5949,7 +5934,7 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
                     continue;
                 const ImGuiResizeGripDef& grip = resize_grip_def[resize_grip_n];
                 const ImVec2 corner = ImLerp(window->Pos, window->Pos + window->Size, grip.CornerPosN);
-                if (g.IO.KeyAlt)
+                if (g.IO.KeyAlt) // FIXME-ROUNDCORNERS
                 {
                     ImVec2 grip_corner = corner;
                     grip_corner.x += grip.InnerDir.x * window_border_size;

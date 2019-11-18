@@ -245,94 +245,108 @@ static void GetVtxIdxDelta(ImDrawList* dl, int* vtx, int *idx)
     idx_o = idx_n;
 }
 
+// https://github.com/ocornut/imgui/issues/1962
+// FIXME-ROUNDCORNERS: Sizes aren't matching.
+// FIXME-ROUNDCORNERS: Lift the RoundCornersMaxSize limitation, fallback on existing renderer.
+// FIXME-ROUNDCORNERS: Work on reducing filtrate for stroked shapes (may need to trade some cpu/vtx to reduce fill-rate for e.g. simple stroked circle) > https://github.com/ocornut/imgui/issues/1962#issuecomment-411507917
+// FIXME-ROUNDCORNERS: Figure out how to support multiple thickness, might hard-code common steps (1.0, 1.5, 2.0, 3.0), not super satisfactory but may be best
+// FIXME-ROUNDCORNERS: AddCircle* API relying on num_segments may need rework, might obsolete this parameter, or make it 0 default and rely on automatic subdivision similar to style.CurveTessellationTol for Bezier
+// FIXME-ROUNDCORNERS: Intentional "low segment count" shapes (e.g. hexagon) currently achieved with AddCircle may need a new API (AddNgon?)
 static void TestTextureBasedRender()
 {
     ImGuiIO& io = ImGui::GetIO();
+    ImGuiStyle& style = ImGui::GetStyle();
 
-    ImGui::TextUnformatted("Press SHIFT to toggle quads (hold to see them).");
-    ImGui::TextUnformatted(io.KeyShift ? "SHIFT ON  -- Rasterized quad circle! w00t! OPTIMIZATION!"
-        : "SHIFT OFF -- Regular, boring circle with PathArcToFast.");
+    ImGui::Begin("tex_round_corners");
+
+    ImGui::Text("Hold SHIFT to toggle (%s)", io.KeyShift ? "SHIFT ON  -- Using textures." : "SHIFT OFF -- Old method.");
 
     static float radius = io.Fonts->RoundCornersMaxSize * 0.5f;
-    ImGui::SliderFloat("radius", &radius, 0.0f, (float)io.Fonts->RoundCornersMaxSize, "%.0f");
-    ImGui::BeginGroup();
-
     static int segments = 20;
-    ImGui::PushItemWidth(120);
-    ImGui::SliderInt("segments", &segments, 3, 100);
-    ImGui::PopItemWidth();
 
-    int vtx = 0;
-    int idx = 0;
-    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImGui::SliderFloat("radius", &radius, 0.0f, (float)io.Fonts->RoundCornersMaxSize, "%.0f");
+
+    int vtx_n = 0;
+    int idx_n = 0;
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     {
-        ImGui::Button("##1", ImVec2(200, 200));
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImVec2 min = ImGui::GetItemRectMin();
-        ImVec2 size = ImGui::GetItemRectSize();
-        dl->AddCircleFilled(ImVec2(min.x + size.x * 0.5f, min.y + size.y * 0.5f), radius, 0xFFFF00FF, segments);
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImGui::Text("AddCircleFilled\n %d vtx, %d idx", vtx, idx);
+        ImGui::BeginGroup();
+
+        ImGui::PushItemWidth(120);
+        ImGui::SliderInt("segments", &segments, 3, 100);
+        ImGui::PopItemWidth();
+
+        {
+            ImGui::Button("##1", ImVec2(200, 200));
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 size = ImGui::GetItemRectSize();
+            draw_list->AddCircleFilled(ImVec2(min.x + size.x * 0.5f, min.y + size.y * 0.5f), radius, IM_COL32(255,0,255,255), segments);
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImGui::Text("AddCircleFilled\n %d vtx, %d idx", vtx_n, idx_n);
+        }
+        {
+            ImGui::Button("##2", ImVec2(200, 200));
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 size = ImGui::GetItemRectSize();
+            draw_list->AddCircle(ImVec2(min.x + size.x * 0.5f, min.y + size.y * 0.5f), radius, IM_COL32(255,0,255,255), segments);
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImGui::Text("AddCircle\n %d vtx, %d idx", vtx_n, idx_n);
+        }
+        ImGui::EndGroup();
     }
-    {
-        ImGui::Button("##2", ImVec2(200, 200));
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImVec2 min = ImGui::GetItemRectMin();
-        ImVec2 size = ImGui::GetItemRectSize();
-        dl->AddCircle(ImVec2(min.x + size.x * 0.5f, min.y + size.y * 0.5f), radius, 0xFFFF00FF, segments);
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImGui::Text("AddCircle\n %d vtx, %d idx", vtx, idx);
-    }
-    ImGui::EndGroup();
 
     ImGui::SameLine();
 
-    ImGui::BeginGroup();
-    static bool tl = true, tr = true, bl = true, br = true;
-    ImGui::Checkbox("TL", &tl);
-    ImGui::SameLine(0, 12);
-    ImGui::Checkbox("TR", &tr);
-    ImGui::SameLine(0, 12);
-    ImGui::Checkbox("BL", &bl);
-    ImGui::SameLine(0, 12);
-    ImGui::Checkbox("BR", &br);
-
-    ImDrawFlags flags = 0;
-    flags |= tl ? ImDrawFlags_RoundCornersTopLeft : 0;
-    flags |= tr ? ImDrawFlags_RoundCornersTopRight : 0;
-    flags |= bl ? ImDrawFlags_RoundCornersBottomLeft : 0;
-    flags |= br ? ImDrawFlags_RoundCornersBottomRight : 0;
-    if (flags == 0)
-        flags |= ImDrawFlags_RoundCornersNone;
-
     {
-        ImGui::Button("", ImVec2(200, 200));
-        ImVec2 r_min = ImGui::GetItemRectMin();
-        ImVec2 r_max = ImGui::GetItemRectMax();
+        ImGui::BeginGroup();
 
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        dl->AddRectFilled(r_min, r_max, 0xFFFF00FF, radius, flags);
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImGui::Text("AddRectFilled\n %d vtx, %d idx", vtx, idx);
+        static ImDrawFlags corner_flags = ImDrawFlags_RoundCornersAll;
+        ImGui::CheckboxFlags("TL", (unsigned int*)&corner_flags, ImDrawFlags_RoundCornersTopLeft);
+        ImGui::SameLine();
+        ImGui::CheckboxFlags("TR", (unsigned int*)&corner_flags, ImDrawFlags_RoundCornersTopRight);
+        ImGui::SameLine();
+        ImGui::CheckboxFlags("BL", (unsigned int*)&corner_flags, ImDrawFlags_RoundCornersBottomLeft);
+        ImGui::SameLine();
+        ImGui::CheckboxFlags("BR", (unsigned int*)&corner_flags, ImDrawFlags_RoundCornersBottomRight);
+
+        {
+            ImGui::Button("##3", ImVec2(200, 200));
+            ImVec2 r_min = ImGui::GetItemRectMin();
+            ImVec2 r_max = ImGui::GetItemRectMax();
+
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            draw_list->AddRectFilled(r_min, r_max, IM_COL32(255,0,255,255), radius, corner_flags ? corner_flags : ImDrawFlags_RoundCornersNone);
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImGui::Text("AddRectFilled\n %d vtx, %d idx", vtx_n, idx_n);
+        }
+        {
+            ImGui::Button("##4", ImVec2(200, 200));
+            ImVec2 r_min = ImGui::GetItemRectMin();
+            ImVec2 r_max = ImGui::GetItemRectMax();
+
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            draw_list->AddRect(r_min, r_max, IM_COL32(255,0,255,255), radius, corner_flags);
+            GetVtxIdxDelta(draw_list, &vtx_n, &idx_n);
+            ImGui::Text("AddRect\n %d vtx, %d idx", vtx_n, idx_n);
+        }
+
+        ImGui::EndGroup();
     }
-    {
-        ImGui::Button("", ImVec2(200, 200));
-        ImVec2 r_min = ImGui::GetItemRectMin();
-        ImVec2 r_max = ImGui::GetItemRectMax();
-
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        dl->AddRect(r_min, r_max, 0xFFFF00FF, radius, flags);
-        GetVtxIdxDelta(dl, &vtx, &idx);
-        ImGui::Text("AddRect\n %d vtx, %d idx", vtx, idx);
-    }
-
-    ImGui::EndGroup();
-
     ImGui::Separator();
 
+    ImGui::Text("Style");
+    ImGui::SliderFloat("FrameRounding", &style.FrameRounding, 0.0f, 100.0f, "%.0f");
+    ImGui::SliderFloat("WindowRounding", &style.WindowRounding, 0.0f, 100.0f, "%.0f");
+
+    // Show atlas
+    ImGui::Text("Atlas");
     ImFontAtlas* atlas = ImGui::GetIO().Fonts;
     ImGui::Image(atlas->TexID, ImVec2((float)atlas->TexWidth, (float)atlas->TexHeight), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 128));
+
+    ImGui::End();
 }
 
 //-----------------------------------------------------------------------------
