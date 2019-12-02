@@ -763,8 +763,7 @@ struct IMGUI_API ImDrawListSharedData
     const ImVec4*   TexUvLines;                 // UV of anti-aliased lines in the atlas
 
     // FIXME-ROUNDCORNERS: WIP + need to remove CircleVtx12 before PR
-    ImVector<ImVec4>* TexUvRoundCornerFilled;   // UV of filled round corner quad in the atlas
-    ImVector<ImVec4>* TexUvRoundCornerStroked;  // UV of stroked round corner quad in the atlas
+    ImVector<ImFontRoundedCornerData>* TexRoundCornerData; // Data for texture-based rounded corners, indexed by radius
 
     ImDrawListSharedData();
     void SetCircleTessellationMaxError(float max_error);
@@ -3210,7 +3209,6 @@ namespace ImGui
 
 } // namespace ImGui
 
-
 //-----------------------------------------------------------------------------
 // [SECTION] ImFontAtlas internal API
 //-----------------------------------------------------------------------------
@@ -3225,6 +3223,7 @@ struct ImFontBuilderIO
 #ifdef IMGUI_ENABLE_STB_TRUETYPE
 IMGUI_API const ImFontBuilderIO* ImFontAtlasGetBuilderForStbTruetype();
 #endif
+const unsigned int  ImFontAtlasRoundCornersMaxSize = 32; // Maximum size of rounded corner texture to generate in fonts
 IMGUI_API void      ImFontAtlasBuildInit(ImFontAtlas* atlas);
 IMGUI_API void      ImFontAtlasBuildSetupFont(ImFontAtlas* atlas, ImFont* font, ImFontConfig* font_config, float ascent, float descent);
 IMGUI_API void      ImFontAtlasBuildPackCustomRects(ImFontAtlas* atlas, void* stbrp_context_opaque);
