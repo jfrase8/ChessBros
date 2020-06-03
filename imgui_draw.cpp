@@ -4522,6 +4522,7 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
 // - RenderArrowPointingAt()
 // - RenderRectFilledRangeH()
 // - RenderRectFilledWithHole()
+// - RenderWindowResizeGrip()
 //-----------------------------------------------------------------------------
 // Function in need of a redesign (legacy mess)
 // - RenderColorRectWithAlphaCheckerboard()
@@ -4675,6 +4676,91 @@ void ImGui::RenderRectFilledWithHole(ImDrawList* draw_list, const ImRect& outer,
     if (fill_R && fill_U) draw_list->AddRectFilled(ImVec2(inner.Max.x, outer.Min.y), ImVec2(outer.Max.x, inner.Min.y), col, rounding, ImDrawFlags_RoundCornersTopRight);
     if (fill_L && fill_D) draw_list->AddRectFilled(ImVec2(outer.Min.x, inner.Max.y), ImVec2(inner.Min.x, outer.Max.y), col, rounding, ImDrawFlags_RoundCornersBottomLeft);
     if (fill_R && fill_D) draw_list->AddRectFilled(ImVec2(inner.Max.x, inner.Max.y), ImVec2(outer.Max.x, outer.Max.y), col, rounding, ImDrawFlags_RoundCornersBottomRight);
+}
+
+// Add a resize grip using the rounded corner textures, if possible.
+// Returns false if rendering could not be performed, true otherwise
+// FIXME: Probably ok to move this to imgui_draw.cpp in 'Internal Render Helpers' section.
+bool ImGui::RenderWindowResizeGrip(ImDrawList* draw_list, const ImVec2& corner, unsigned int rad, unsigned int overall_grip_size, ImDrawFlags flags, ImU32 col)
+{
+    // Texture path disabled by the draw list flags
+    // Texture path disabled for radius 0 which cause issues with the UV lookup below
+    const bool use_tex = (draw_list->Flags & ImDrawListFlags_RoundCornersUseTex) && (rad >= 1 && rad <= ImFontAtlasRoundCornersMaxSize);
+    if (use_tex == false)
+        return false;
+
+    ImFontAtlas* atlas = draw_list->_Data->Font->ContainerAtlas;
+    IM_ASSERT(atlas->TexID == draw_list->_TextureIdStack.back());   // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
+    IM_ASSERT(ImIsPowerOfTwo(flags));               // Only allow a single corner to be specified here.
+    IM_ASSERT_PARANOID((atlas->Flags & ImFontAtlasFlags_NoBakedRoundCorners) == 0);
+
+    // Calculate UVs for the three points we are interested in from the texture
+    // - uv[0] is the mid-point from the corner towards the center of the circle (solid)
+    // - uv[1] is a solid point on the edge of the circle
+    // - uv[2] is the outer edge (blank, outside the circle)
+    const ImVec4& uvs = (*draw_list->_Data->TexRoundCornerData)[rad - 1].TexUvFilled;
+    const ImVec2 uv[] =
+    {
+        ImVec2(ImLerp(uvs.x, uvs.z, 0.5f), ImLerp(uvs.y, uvs.w, 0.5f)),
+        ImVec2(uvs.x, uvs.y),
+        ImVec2(uvs.z, uvs.w),
+    };
+
+    // Calculate the coordinates of the points at the inside of the rounded area of the corner, and the outside of the grip on the X/Y axes
+    ImVec2 in_x = corner, in_y = corner, out_x = corner, out_y = corner;
+    if (flags & (ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight))
+    {
+        in_y.y += rad;
+        out_y.y += overall_grip_size;
+    }
+    else if (flags & (ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight))
+    {
+        in_y.y -= rad;
+        out_y.y -= overall_grip_size;
+    }
+
+    if (flags & (ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersBottomLeft))
+    {
+        in_x.x += rad;
+        out_x.x += overall_grip_size;
+    }
+    else if (flags & (ImDrawFlags_RoundCornersTopRight | ImDrawFlags_RoundCornersBottomRight))
+    {
+        in_x.x -= rad;
+        out_x.x -= overall_grip_size;
+    }
+
+    // Calculate the mid-point on the diagonal
+    const ImVec2 mid = ImVec2(ImLerp(in_x.x, in_y.x, 0.5f), ImLerp(in_x.y, in_y.y, 0.5f));
+
+    // Now write out the geometry
+    const int num_verts = 6;    // Number of vertices we are going to write
+    const int num_indices = 12; // Number of indices we are going to write
+    draw_list->PrimReserve(num_indices, num_verts);
+
+    unsigned int idx = draw_list->_VtxCurrentIdx;
+    ImDrawVert* vtx_write_ptr = draw_list->_VtxWritePtr;
+    ImDrawIdx* idx_write_ptr = draw_list->_IdxWritePtr;
+    vtx_write_ptr[0].pos = mid;     vtx_write_ptr[0].uv = uv[0];    vtx_write_ptr[0].col = col;
+    vtx_write_ptr[1].pos = in_y;    vtx_write_ptr[1].uv = uv[1];    vtx_write_ptr[1].col = col;
+    vtx_write_ptr[2].pos = corner;  vtx_write_ptr[2].uv = uv[2];    vtx_write_ptr[2].col = col;
+    vtx_write_ptr[3].pos = in_x;    vtx_write_ptr[3].uv = uv[1];    vtx_write_ptr[3].col = col;
+    vtx_write_ptr[4].pos = out_x;   vtx_write_ptr[4].uv = uv[1];    vtx_write_ptr[4].col = col;
+    vtx_write_ptr[5].pos = out_y;   vtx_write_ptr[5].uv = uv[1];    vtx_write_ptr[5].col = col;
+
+    // Curved section
+    idx_write_ptr[0] = (ImDrawIdx)(idx);     idx_write_ptr[1]  = (ImDrawIdx)(idx + 1); idx_write_ptr[2]  = (ImDrawIdx)(idx + 2);
+    idx_write_ptr[3] = (ImDrawIdx)(idx);     idx_write_ptr[4]  = (ImDrawIdx)(idx + 2); idx_write_ptr[5]  = (ImDrawIdx)(idx + 3);
+
+    // Outer section
+    idx_write_ptr[6] = (ImDrawIdx)(idx + 4); idx_write_ptr[7]  = (ImDrawIdx)(idx + 3); idx_write_ptr[8]  = (ImDrawIdx)(idx + 5);
+    idx_write_ptr[9] = (ImDrawIdx)(idx + 3); idx_write_ptr[10] = (ImDrawIdx)(idx + 5); idx_write_ptr[11] = (ImDrawIdx)(idx + 1);
+
+    draw_list->_VtxWritePtr += num_verts;
+    draw_list->_VtxCurrentIdx += num_verts;
+    draw_list->_IdxWritePtr += num_indices;
+
+    return true;
 }
 
 // Helper for ColorPicker4()
