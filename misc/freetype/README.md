@@ -104,7 +104,8 @@ struct FreeTypeTest
     // Call to draw interface
     void ShowFreetypeOptionsWindow()
     {
-        ImGui::Begin("FreeType Options");
+        if (!ImGui::Begin("FreeType Options"))
+            return;
         ImGui::ShowFontSelector("Fonts");
         WantRebuild |= ImGui::RadioButton("FreeType", (int*)&BuildMode, FontBuildMode_FreeType);
         ImGui::SameLine();

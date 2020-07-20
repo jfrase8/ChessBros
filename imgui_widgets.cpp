@@ -1627,7 +1627,6 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     PopStyleVar();
     if (!ret)
     {
-        EndPopup();
         IM_ASSERT(0);   // This should never happen as we tested for IsPopupOpen() above
         return false;
     }
@@ -3838,7 +3837,6 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         PopStyleColor();
         if (!child_visible)
         {
-            EndChild();
             EndGroup();
             return false;
         }
@@ -6133,8 +6131,8 @@ bool ImGui::ListBoxHeader(const char* label, const ImVec2& size_arg)
     if (label_size.x > 0)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
-    BeginChildFrame(id, frame_bb.GetSize());
-    return true;
+    // FIXME-NEWBEGIN
+    return BeginChildFrame(id, frame_bb.GetSize());
 }
 
 // FIXME: In principle this function should be called EndListBox(). We should rename it after re-evaluating if we want to keep the same signature.
@@ -6568,10 +6566,7 @@ bool ImGui::BeginMainMenuBar()
 
     g.NextWindowData.MenuBarOffsetMinVal = ImVec2(0.0f, 0.0f);
     if (!is_open)
-    {
-        End();
         return false;
-    }
     return true; //-V1020
 }
 

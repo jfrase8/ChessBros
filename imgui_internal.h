@@ -1438,6 +1438,7 @@ struct ImGuiContext
     ImGuiWindow*            HoveredWindowUnderMovingWindow;     // Hovered window ignoring MovingWindow. Only set if MovingWindow is set.
     ImGuiDockNode*          HoveredDockNode;                    // Hovered dock node.
     ImGuiWindow*            MovingWindow;                       // Track the window we clicked on (in order to preserve focus). The actual window that is moved is generally MovingWindow->RootWindow.
+    ImGuiWindow*            LastBeginWindow;                    // Track the last window we called Begin() on, this is used to easily access it even if Begin() returned false.
     ImGuiWindow*            WheelingWindow;                     // Track the window we started mouse-wheeling on. Until a timer elapse or mouse has moved, generally keep scrolling the same window even if during the course of scrolling the mouse ends up hovering a child window.
     ImVec2                  WheelingWindowRefMousePos;
     float                   WheelingWindowTimer;
@@ -1640,6 +1641,7 @@ struct ImGuiContext
     // Debug Tools
     bool                    DebugItemPickerActive;              // Item picker is active (started with DebugStartItemPicker())
     ImGuiID                 DebugItemPickerBreakId;             // Will call IM_DEBUG_BREAK() when encountering this id
+    int                     DebugBeginReturnValueCullDepth;     // Cycle between 0..9 then wrap around.
     ImGuiMetricsConfig      DebugMetricsConfig;
 
     // Misc
@@ -1675,6 +1677,7 @@ struct ImGuiContext
         HoveredWindowUnderMovingWindow = NULL;
         HoveredDockNode = NULL;
         MovingWindow = NULL;
+        LastBeginWindow = NULL;
         WheelingWindow = NULL;
         WheelingWindowTimer = 0.0f;
 
@@ -1793,6 +1796,7 @@ struct ImGuiContext
 
         DebugItemPickerActive = false;
         DebugItemPickerBreakId = 0;
+        DebugBeginReturnValueCullDepth = -1;
 
         memset(FramerateSecPerFrame, 0, sizeof(FramerateSecPerFrame));
         FramerateSecPerFrameIdx = 0;

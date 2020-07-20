@@ -68,6 +68,9 @@ Index of this file:
 #define IMGUI_HAS_VIEWPORT          1 // Viewport WIP branch
 #define IMGUI_HAS_DOCK              1 // Docking WIP branch
 
+// Features
+#define IMGUI_HAS_NEWBEGIN          1
+
 // Define attributes of all API symbols declarations (e.g. for DLL under Windows)
 // IMGUI_API is used for core imgui functions, IMGUI_IMPL_API is used for the default backends files (imgui_impl_xxx.h)
 // Using dear imgui via a shared library is not recommended, because we don't guarantee backward nor forward ABI compatibility (also function call overhead, as dear imgui is a call-heavy API)
@@ -297,10 +300,10 @@ namespace ImGui
     // - You may append multiple times to the same window during the same frame by calling Begin()/End() pairs multiple times.
     //   Some information such as 'flags' or 'p_open' will only be considered by the first call to Begin().
     // - Begin() return false to indicate the window is collapsed or fully clipped, so you may early out and omit submitting
-    //   anything to the window. Always call a matching End() for each Begin() call, regardless of its return value!
-    //   [Important: due to legacy reason, this is inconsistent with most other functions such as BeginMenu/EndMenu,
-    //    BeginPopup/EndPopup, etc. where the EndXXX call should only be called if the corresponding BeginXXX function
-    //    returned true. Begin and BeginChild are the only odd ones out. Will be fixed in a future update.]
+    //   anything to the window.
+    // - IMPORTANT: SINCE 1.XX (XXXX 2020): Only call a matching End() if Begin() returned true!.
+    // - IMPORTANT: BEFORE 1.XX (XXXX 2020): The return value of Begin() was inconsistent with most other BeginXXX()
+    //   functions, and would require the user to always call End() even if Begin() returned false.
     // - Note that the bottom of window stack always contains a window called "Debug".
     IMGUI_API bool          Begin(const char* name, bool* p_open = NULL, ImGuiWindowFlags flags = 0);
     IMGUI_API void          End();
@@ -309,10 +312,9 @@ namespace ImGui
     // - Use child windows to begin into a self-contained independent scrolling/clipping regions within a host window. Child windows can embed their own child.
     // - For each independent axis of 'size': ==0.0f: use remaining host window size / >0.0f: fixed size / <0.0f: use remaining window size minus abs(size) / Each axis can use a different mode, e.g. ImVec2(0,400).
     // - BeginChild() returns false to indicate the window is collapsed or fully clipped, so you may early out and omit submitting anything to the window.
-    //   Always call a matching EndChild() for each BeginChild() call, regardless of its return value.
-    //   [Important: due to legacy reason, this is inconsistent with most other functions such as BeginMenu/EndMenu,
-    //    BeginPopup/EndPopup, etc. where the EndXXX call should only be called if the corresponding BeginXXX function
-    //    returned true. Begin and BeginChild are the only odd ones out. Will be fixed in a future update.]
+    // - IMPORTANT: SINCE 1.XX (XXXX 2020): Only call a matching EndChild() if BeginChild() returned true!.
+    // - IMPORTANT: BEFORE 1.XX (XXXX 2020): The return value of BeginChild() was inconsistent with most other BeginXXX()
+    //   functions, and would require the user to always call EndChild() even if BeginChild() returned false. This has been changed.
     IMGUI_API bool          BeginChild(const char* str_id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
     IMGUI_API bool          BeginChild(ImGuiID id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
     IMGUI_API void          EndChild();
@@ -1820,6 +1822,9 @@ struct ImGuiIO
     bool        ConfigWindowsResizeFromEdges;   // = true           // Enable resizing of windows from their edges and from the lower-left corner. This requires (io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) because it needs mouse cursor feedback. (This used to be a per-window ImGuiWindowFlags_ResizeFromAnySide flag)
     bool        ConfigWindowsMoveFromTitleBarOnly; // = false       // [BETA] Set to true to only allow moving windows when clicked+dragged from the title bar. Windows without a title bar are not affected.
     float       ConfigMemoryCompactTimer;       // = 60.0f          // [BETA] Free transient windows/tables memory buffers when unused for given amount of time. Set to -1.0f to disable.
+
+    // Debug options
+    bool        ConfigDebugBeginReturnValue;    // = false          // When set, some calls to Begin() will return false to facilitate testing and transitioning to 1.78 Begin()/End() pairing behavior. Will cycle through each unique window depth then repeat. Suggested use: add "io.ConfigDebugBeginReturnValue = io.KeyShift" in your main loop then occasionally press SHIFT. Windows should be flickering. Your code will assert in End() if calling End() incorrectly.
 
     //------------------------------------------------------------------
     // Platform Functions

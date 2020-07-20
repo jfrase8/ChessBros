@@ -1083,6 +1083,9 @@ ImGuiIO::ImGuiIO()
     ConfigWindowsMoveFromTitleBarOnly = false;
     ConfigMemoryCompactTimer = 60.0f;
 
+    // Debug options
+    ConfigDebugBeginReturnValue = false;
+
     // Platform Functions
     BackendPlatformName = BackendRendererName = NULL;
     BackendPlatformUserData = BackendRendererUserData = BackendLanguageUserData = NULL;
@@ -4107,12 +4110,26 @@ void ImGui::NewFrame()
     UpdateDebugToolItemPicker();
 
     // Create implicit/fallback window - which we will only render it if the user has added something to it.
-    // We don't use "Debug" to avoid colliding with user trying to create a "Debug" window with custom flags.
-    // This fallback is particularly important as it avoid ImGui:: calls from crashing.
+    // - We don't use "Debug" to avoid colliding with user trying to create a "Debug" window with custom flags.
+    // - This fallback is particularly important as it avoid ImGui:: calls from crashing.
+    // - The fallback window exceptionally doesn't call End() automatically if Begin() returns false (this is intended).
     g.WithinFrameScopeWithImplicitWindow = true;
     SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
     Begin("Debug##Default");
     IM_ASSERT(g.CurrentWindow->IsFallbackWindow == true);
+
+    // [DEBUG] When io.ConfigDebugBeginReturnValue is set, we make Begin() return false at different level of the window stack to validate Begin()/End() behavior in user code.
+    if (g.IO.ConfigDebugBeginReturnValue)
+    {
+        g.DebugBeginReturnValueCullDepth = (g.DebugBeginReturnValueCullDepth == -1) ? 0 : ((g.DebugBeginReturnValueCullDepth + ((g.FrameCount % 4) == 0 ? 1 : 0)) % 10);
+        char buf[64];
+        ImFormatString(buf, IM_ARRAYSIZE(buf), "Cull depth %d", g.DebugBeginReturnValueCullDepth);
+        GetForegroundDrawList()->AddText(ImVec2(0, 0), IM_COL32(255, 255, 0, 255), buf);
+    }
+    else
+    {
+        g.DebugBeginReturnValueCullDepth = -1;
+    }
 
     CallContextHooks(&g, ImGuiContextHookType_NewFramePost);
 }
@@ -5120,7 +5137,7 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, b
     bool ret = Begin(title, NULL, flags);
     g.Style.ChildBorderSize = backup_border_size;
 
-    ImGuiWindow* child_window = g.CurrentWindow;
+    ImGuiWindow* child_window = g.LastBeginWindow; // FIXME-NEWBEGIN
     child_window->ChildId = id;
     child_window->AutoFitChildAxises = (ImS8)auto_fit_axises;
 
@@ -5198,6 +5215,7 @@ void ImGui::EndChild()
 // Helper to create a child window / scrolling region that looks like a normal widget frame.
 bool ImGui::BeginChildFrame(ImGuiID id, const ImVec2& size, ImGuiWindowFlags extra_flags)
 {
+    // FIXME-NEWBEGIN
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
     PushStyleColor(ImGuiCol_ChildBg, style.Colors[ImGuiCol_FrameBg]);
@@ -5981,6 +5999,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
     // We intentionally set g.CurrentWindow to NULL to prevent usage until when the viewport is set, then will call SetCurrentWindow()
     g.CurrentWindowStack.push_back(window);
     g.CurrentWindow = window;
+    g.LastBeginWindow = window;
     window->DC.StackSizesOnBegin.SetToCurrentState();
     g.CurrentWindow = NULL;
 
@@ -6740,7 +6759,24 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
         window->SkipItems = skip_items;
     }
 
-    return !window->SkipItems;
+    // FIXME-OPT
+    if (window->SkipItems || g.DebugBeginReturnValueCullDepth == g.CurrentWindowStack.Size)
+    {
+        // The implicit fallback is NOT automatically ended as an exception to the rule,
+        // allowing it to always be able to receive commands without crashing.
+        if (!window->IsFallbackWindow)
+        {
+            if (window->Flags & ImGuiWindowFlags_Popup)
+                EndPopup();
+            else if (window->Flags & ImGuiWindowFlags_ChildWindow)
+                EndChild();
+            else
+                End();
+        }
+        return false;
+    }
+
+    return true;
 }
 
 void ImGui::End()
@@ -6751,6 +6787,34 @@ void ImGui::End()
     // Error checking: verify that user hasn't called End() too many times!
     if (g.CurrentWindowStack.Size <= 1 && g.WithinFrameScopeWithImplicitWindow)
     {
+        // - IMPORTANT: SINCE 1.XX (XXXX 2020): Only call a matching End() if Begin() returned true!.
+        // - IMPORTANT: BEFORE 1.XX (XXXX 2020): The return value of Begin() was inconsistent with most other BeginXXX()
+        //   functions, and would require the user to always call End() even if Begin() returned false.
+
+        // - When transitioning a codebase from < 1.XX to >= 1.XX, code needs to be refactored the following way:
+        //   Before ------------------------------------> After
+        //      ImGui::Begin("Hello");                       if (ImGui::Begin("Hello"))
+        //      ImGui::Button("OK");                         {
+        //      ImGui::End();                                    ImGui::Button("OK");
+        //                                                       ImGui::End();
+        //                                                   }
+        //
+        //   Before ------------------------------------> After
+        //      if (ImGui::Begin("Hello"))                   if (ImGui::Begin("Hello"))
+        //      {                                            {
+        //          ImGui::Button("OK");                         ImGui::Button("OK");
+        //      }                                                ImGui::End();
+        //      ImGui::End();                                }
+        //       
+        //   Before ------------------------------------> After
+        //      if (!ImGui::Begin("Hello"))                  if (!ImGui::Begin("Hello"))
+        //      {                                                return;
+        //          ImGui::End();                            ImGui::Button("OK");
+        //          return;                                  ImGui::End();
+        //      }
+        //      ImGui::Button("OK");
+        //      ImGui::End();
+
         IM_ASSERT_USER_ERROR(g.CurrentWindowStack.Size > 1, "Calling End() too many times!");
         return;
     }
@@ -8509,7 +8573,9 @@ void ImGui::BeginTooltipEx(ImGuiWindowFlags extra_flags, ImGuiTooltipFlags toolt
                 ImFormatString(window_name, IM_ARRAYSIZE(window_name), "##Tooltip_%02d", ++g.TooltipOverrideCount);
             }
     ImGuiWindowFlags flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking;
-    Begin(window_name, NULL, flags | extra_flags);
+    bool ret = Begin(window_name, NULL, flags | extra_flags);
+    // FIXME-NEWBEGIN
+    IM_ASSERT(ret);
 }
 
 void ImGui::EndTooltip()
@@ -8765,11 +8831,9 @@ bool ImGui::BeginPopupEx(ImGuiID id, ImGuiWindowFlags flags)
     else
         ImFormatString(name, IM_ARRAYSIZE(name), "##Popup_%08x", id); // Not recycling, so we can close/open during the same frame
 
+    // NB: Begin can return false when the popup is completely clipped (e.g. zero size display)
     flags |= ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoDocking;
     bool is_open = Begin(name, NULL, flags);
-    if (!is_open) // NB: Begin can return false when the popup is completely clipped (e.g. zero size display)
-        EndPopup();
-
     return is_open;
 }
 
@@ -8811,9 +8875,11 @@ bool ImGui::BeginPopupModal(const char* name, bool* p_open, ImGuiWindowFlags fla
     const bool is_open = Begin(name, p_open, flags);
     if (!is_open || (p_open && !*p_open)) // NB: is_open can be 'false' when the popup is completely clipped (e.g. zero size display)
     {
-        EndPopup();
         if (is_open)
+        {
+            EndPopup();
             ClosePopupToLevel(g.BeginPopupStack.Size, true);
+        }
         return false;
     }
     return is_open;
@@ -10188,7 +10254,10 @@ void ImGui::NavUpdateWindowingOverlay()
     SetNextWindowSizeConstraints(ImVec2(viewport->Size.x * 0.20f, viewport->Size.y * 0.20f), ImVec2(FLT_MAX, FLT_MAX));
     SetNextWindowPos(viewport->Pos + viewport->Size * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     PushStyleVar(ImGuiStyleVar_WindowPadding, g.Style.WindowPadding * 2.0f);
-    Begin("###NavWindowingList", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    bool ret = Begin("###NavWindowingList", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    PopStyleVar();
+    if (!ret)
+        return;
     for (int n = g.WindowsFocusOrder.Size - 1; n >= 0; n--)
     {
         ImGuiWindow* window = g.WindowsFocusOrder[n];
@@ -10200,7 +10269,6 @@ void ImGui::NavUpdateWindowingOverlay()
         Selectable(label, g.NavWindowingTarget == window);
     }
     End();
-    PopStyleVar();
 }
 
 
@@ -15680,10 +15748,7 @@ static void MetricsHelpMarker(const char* desc)
 void ImGui::ShowMetricsWindow(bool* p_open)
 {
     if (!Begin("Dear ImGui Metrics/Debugger", p_open))
-    {
-        End();
         return;
-    }
 
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;

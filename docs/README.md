@@ -52,7 +52,8 @@ Result:
 Code:
 ```cpp
 // Create a window called "My First Tool", with a menu bar.
-ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
+if (!ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar))
+    return;
 if (ImGui::BeginMenuBar())
 {
     if (ImGui::BeginMenu("File"))

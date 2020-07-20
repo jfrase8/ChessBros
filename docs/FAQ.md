@@ -429,8 +429,10 @@ provide similar or better string helpers.
 ### Q: How can I display custom shapes? (using low-level ImDrawList API)
 
 - You can use the low-level `ImDrawList` api to render shapes within a window.
+
 ```cpp
-ImGui::Begin("My shapes");
+if (!ImGui::Begin("My shapes"))
+    return;
 
 ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
