@@ -179,9 +179,8 @@ static void ShowExampleMenuFile();
 static void HelpMarker(const char* desc)
 {
     ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered() && ImGui::BeginTooltip())
     {
-        ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
         ImGui::TextUnformatted(desc);
         ImGui::PopTextWrapPos();
@@ -621,9 +620,8 @@ static void ShowDemoWindowWidgets()
 
         ImGui::SameLine();
         ImGui::Text("- or me");
-        if (ImGui::IsItemHovered())
+        if (ImGui::IsItemHovered() && ImGui::BeginTooltip())
         {
-            ImGui::BeginTooltip();
             ImGui::Text("I am a fancy tooltip");
             static float arr[] = { 0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f };
             ImGui::PlotLines("Curve", arr, IM_ARRAYSIZE(arr));
@@ -1006,9 +1004,8 @@ static void ShowDemoWindowWidgets()
             ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // No tint
             ImVec4 border_col = ImVec4(1.0f, 1.0f, 1.0f, 0.5f); // 50% opaque white
             ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
-            if (ImGui::IsItemHovered())
+            if (ImGui::IsItemHovered() && ImGui::BeginTooltip())
             {
-                ImGui::BeginTooltip();
                 float region_sz = 32.0f;
                 float region_x = io.MousePos.x - pos.x - region_sz * 0.5f;
                 float region_y = io.MousePos.y - pos.y - region_sz * 0.5f;
@@ -5682,9 +5679,8 @@ static void NodeFont(ImFont* font)
                 draw_list->AddRect(cell_p1, cell_p2, glyph ? IM_COL32(255, 255, 255, 100) : IM_COL32(255, 255, 255, 50));
                 if (glyph)
                     font->RenderChar(draw_list, cell_size, cell_p1, glyph_col, (ImWchar)(base + n));
-                if (glyph && ImGui::IsMouseHoveringRect(cell_p1, cell_p2))
+                if (glyph && ImGui::IsMouseHoveringRect(cell_p1, cell_p2) && ImGui::BeginTooltip())
                 {
-                    ImGui::BeginTooltip();
                     ImGui::Text("Codepoint: U+%04X", base + n);
                     ImGui::Separator();
                     ImGui::Text("Visible: %d", glyph->Visible);
@@ -5914,19 +5910,21 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
             if (ImGui::IsItemActive())
             {
                 ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
-                ImGui::BeginTooltip();
-                ImVec2 p = ImGui::GetCursorScreenPos();
-                ImDrawList* draw_list = ImGui::GetWindowDrawList();
-                float RAD_MIN = 10.0f, RAD_MAX = 80.0f;
-                float off_x = 10.0f;
-                for (int n = 0; n < 7; n++)
+                if (ImGui::BeginTooltip())
                 {
-                    const float rad = RAD_MIN + (RAD_MAX - RAD_MIN) * (float)n / (7.0f - 1.0f);
-                    draw_list->AddCircle(ImVec2(p.x + off_x + rad, p.y + RAD_MAX), rad, ImGui::GetColorU32(ImGuiCol_Text), 0);
-                    off_x += 10.0f + rad * 2.0f;
+                    ImVec2 p = ImGui::GetCursorScreenPos();
+                    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                    float RAD_MIN = 10.0f, RAD_MAX = 80.0f;
+                    float off_x = 10.0f;
+                    for (int n = 0; n < 7; n++)
+                    {
+                        const float rad = RAD_MIN + (RAD_MAX - RAD_MIN) * (float)n / (7.0f - 1.0f);
+                        draw_list->AddCircle(ImVec2(p.x + off_x + rad, p.y + RAD_MAX), rad, ImGui::GetColorU32(ImGuiCol_Text), 0);
+                        off_x += 10.0f + rad * 2.0f;
+                    }
+                    ImGui::Dummy(ImVec2(off_x, RAD_MAX * 2.0f));
+                    ImGui::EndTooltip();
                 }
-                ImGui::Dummy(ImVec2(off_x, RAD_MAX * 2.0f));
-                ImGui::EndTooltip();
             }
             ImGui::SameLine();
             HelpMarker("When drawing circle primitives with \"num_segments == 0\" tesselation will be calculated automatically.");
