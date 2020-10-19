@@ -13270,8 +13270,10 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
             window_flags |= ImGuiWindowFlags_NoTitleBar;
 
             PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-            Begin(window_label, NULL, window_flags);
+            bool ret = Begin(window_label, NULL, window_flags);
             PopStyleVar();
+            IM_UNUSED(ret);
+            IM_ASSERT(ret); // FIXME-NEWBEGIN
             beginned_into_host_window = true;
 
             node->HostWindow = host_window = g.CurrentWindow;
@@ -13454,7 +13456,8 @@ bool ImGui::DockNodeBeginAmendTabBar(ImGuiDockNode* node)
         return false;
     if (node->SharedFlags & ImGuiDockNodeFlags_KeepAliveOnly)
         return false;
-    Begin(node->HostWindow->Name);
+    if (!Begin(node->HostWindow->Name))
+        return false;
     PushOverrideID(node->ID);
     bool ret = BeginTabBarEx(node->TabBar, node->TabBar->BarRect, node->TabBar->Flags, node);
     IM_ASSERT(ret);
@@ -14541,10 +14544,12 @@ void ImGui::DockSpace(ImGuiID id, const ImVec2& size_arg, ImGuiDockNodeFlags fla
     if (node->Windows.Size > 0 || node->IsSplitNode())
         PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
     PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
-    Begin(title, NULL, window_flags);
+    bool ret = Begin(title, NULL, window_flags);
     PopStyleVar();
     if (node->Windows.Size > 0 || node->IsSplitNode())
         PopStyleColor();
+    if (!ret)
+        return; // FIXME-NEWBEGIN
 
     ImGuiWindow* host_window = g.CurrentWindow;
     host_window->DockNodeAsHost = node;
@@ -14595,12 +14600,16 @@ ImGuiID ImGui::DockSpaceOverViewport(ImGuiViewport* viewport, ImGuiDockNodeFlags
     PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    Begin(label, NULL, host_window_flags);
+    bool ret = Begin(label, NULL, host_window_flags);
     PopStyleVar(3);
-
     ImGuiID dockspace_id = GetID("DockSpace");
-    DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, window_class);
-    End();
+
+    // FIXME-NEWBEGIN: KeepAlive if not visible?
+    if (ret)
+    {
+        DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, window_class);
+        End();
+    }
 
     return dockspace_id;
 }
