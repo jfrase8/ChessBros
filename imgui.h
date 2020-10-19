@@ -104,6 +104,16 @@ Index of this file:
 #define IM_FMTLIST(FMT)
 #endif
 
+#if (__cplusplus >= 201703)
+#define IM_NODISCARD                [[nodiscard]]
+#elif defined(__GNUC__) && (__GNUC__ >= 4)
+#define IM_NODISCARD                __attribute__ ((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define IM_NODISCARD                _Check_return_
+#else
+#define IM_NODISCARD
+#endif
+
 // Warnings
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -305,7 +315,7 @@ namespace ImGui
     // - IMPORTANT: BEFORE 1.XX (XXXX 2020): The return value of Begin() was inconsistent with most other BeginXXX()
     //   functions, and would require the user to always call End() even if Begin() returned false.
     // - Note that the bottom of window stack always contains a window called "Debug".
-    IMGUI_API bool          Begin(const char* name, bool* p_open = NULL, ImGuiWindowFlags flags = 0);
+    IM_NODISCARD IMGUI_API bool Begin(const char* name, bool* p_open = NULL, ImGuiWindowFlags flags = 0);
     IMGUI_API void          End();
 
     // Child Windows
@@ -315,8 +325,8 @@ namespace ImGui
     // - IMPORTANT: SINCE 1.XX (XXXX 2020): Only call a matching EndChild() if BeginChild() returned true!.
     // - IMPORTANT: BEFORE 1.XX (XXXX 2020): The return value of BeginChild() was inconsistent with most other BeginXXX()
     //   functions, and would require the user to always call EndChild() even if BeginChild() returned false. This has been changed.
-    IMGUI_API bool          BeginChild(const char* str_id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
-    IMGUI_API bool          BeginChild(ImGuiID id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
+    IM_NODISCARD IMGUI_API bool          BeginChild(const char* str_id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
+    IM_NODISCARD IMGUI_API bool          BeginChild(ImGuiID id, const ImVec2& size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
     IMGUI_API void          EndChild();
 
     // Windows Utilities
@@ -824,7 +834,7 @@ namespace ImGui
     IMGUI_API void          SetStateStorage(ImGuiStorage* storage);                             // replace current window storage with our own (if you want to manipulate it yourself, typically clear subsection of it)
     IMGUI_API ImGuiStorage* GetStateStorage();
     IMGUI_API void          CalcListClipping(int items_count, float items_height, int* out_items_display_start, int* out_items_display_end);    // calculate coarse clipping for large list of evenly sized items. Prefer using the ImGuiListClipper higher-level helper if you can.
-    IMGUI_API bool          BeginChildFrame(ImGuiID id, const ImVec2& size, ImGuiWindowFlags flags = 0); // helper to create a child window / scrolling region that looks like a normal widget frame
+    IM_NODISCARD IMGUI_API bool          BeginChildFrame(ImGuiID id, const ImVec2& size, ImGuiWindowFlags flags = 0); // helper to create a child window / scrolling region that looks like a normal widget frame
     IMGUI_API void          EndChildFrame();                                                    // always call EndChildFrame() regardless of BeginChildFrame() return values (which indicates a collapsed/clipped window)
 
     // Text Utilities
