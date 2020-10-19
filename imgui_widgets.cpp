@@ -6131,7 +6131,7 @@ bool ImGui::ListBoxHeader(const char* label, const ImVec2& size_arg)
     if (label_size.x > 0)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
-    // FIXME-NEWBEGIN
+    // FIXME-NEWBEGIN: Use to be return true so we'll trigger more issues.
     return BeginChildFrame(id, frame_bb.GetSize());
 }
 

@@ -4115,7 +4115,9 @@ void ImGui::NewFrame()
     // - The fallback window exceptionally doesn't call End() automatically if Begin() returns false (this is intended).
     g.WithinFrameScopeWithImplicitWindow = true;
     SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
-    Begin("Debug##Default");
+    bool ret = Begin("Debug##Default");
+    IM_UNUSED(ret);
+    IM_ASSERT(ret);
     IM_ASSERT(g.CurrentWindow->IsFallbackWindow == true);
 
     // [DEBUG] When io.ConfigDebugBeginReturnValue is set, we make Begin() return false at different level of the window stack to validate Begin()/End() behavior in user code.
@@ -5215,7 +5217,6 @@ void ImGui::EndChild()
 // Helper to create a child window / scrolling region that looks like a normal widget frame.
 bool ImGui::BeginChildFrame(ImGuiID id, const ImVec2& size, ImGuiWindowFlags extra_flags)
 {
-    // FIXME-NEWBEGIN
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
     PushStyleColor(ImGuiCol_ChildBg, style.Colors[ImGuiCol_FrameBg]);
@@ -6760,22 +6761,22 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
     }
 
     // FIXME-OPT
-    if (window->SkipItems || g.DebugBeginReturnValueCullDepth == g.CurrentWindowStack.Size)
+    bool debug_skip = (g.DebugBeginReturnValueCullDepth == g.CurrentWindowStack.Size) && (window->Flags & ImGuiWindowFlags_DockNodeHost) == 0;
+    if (window->SkipItems || debug_skip)
     {
         // The implicit fallback is NOT automatically ended as an exception to the rule,
         // allowing it to always be able to receive commands without crashing.
-        if (!window->IsFallbackWindow)
-        {
-            if (window->Flags & ImGuiWindowFlags_Popup)
-                EndPopup();
-            else if (window->Flags & ImGuiWindowFlags_ChildWindow)
-                EndChild();
-            else
-                End();
-        }
+        if (window->IsFallbackWindow)
+            return true;
+
+        if (window->Flags & ImGuiWindowFlags_Popup)
+            EndPopup();
+        else if (window->Flags & ImGuiWindowFlags_ChildWindow)
+            EndChild();
+        else
+            End();
         return false;
     }
-
     return true;
 }
 

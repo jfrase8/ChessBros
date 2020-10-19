@@ -5422,15 +5422,13 @@ void ImGui::ShowAboutWindow(bool* p_open)
 
     static bool show_config_info = false;
     ImGui::Checkbox("Config/Build Information", &show_config_info);
-    if (show_config_info)
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiStyle& style = ImGui::GetStyle();
+    const bool copy_to_clipboard = show_config_info && ImGui::Button("Copy to clipboard");
+    const ImVec2 child_size = ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 18);
+    if (show_config_info && ImGui::BeginChildFrame(ImGui::GetID("cfg_infos"), child_size, ImGuiWindowFlags_NoMove))
     {
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
-
-        bool copy_to_clipboard = ImGui::Button("Copy to clipboard");
-        ImVec2 child_size = ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 18);
-        ImGui::BeginChildFrame(ImGui::GetID("cfg_infos"), child_size, ImGuiWindowFlags_NoMove);
-
         if (copy_to_clipboard)
         {
             ImGui::LogToClipboard();
@@ -5558,6 +5556,7 @@ void ImGui::ShowAboutWindow(bool* p_open)
             ImGui::LogText("\n```\n");
             ImGui::LogFinish();
         }
+        ImGui::EndChildFrame();
     }
     ImGui::End();
 }
