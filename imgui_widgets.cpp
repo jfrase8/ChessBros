@@ -6133,7 +6133,10 @@ bool ImGui::ListBoxHeader(const char* label, const ImVec2& size_arg)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
     // FIXME-NEWBEGIN: Use to be return true so we'll trigger more issues.
-    return BeginChildFrame(id, frame_bb.GetSize());
+    bool ret = BeginChildFrame(id, frame_bb.GetSize());
+    if (!ret)
+        EndGroup();
+    return ret;
 }
 
 // FIXME: In principle this function should be called EndListBox(). We should rename it after re-evaluating if we want to keep the same signature.
