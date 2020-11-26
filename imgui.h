@@ -273,43 +273,23 @@ struct ImVec4
 #endif
 };
 
-#define IM_IMSTR_LENGTH(s)          (s.Begin ? (s.End ? (size_t)(s.End - s.Begin) : strlen(s.Begin)) : 0)
-#define IM_IMSTR_ENSURE_HAS_END(s)  if (s.End == NULL) s.End = s.Begin + strlen(s.Begin)
-
 // String view class.
 #define IMGUI_HAS_IMSTR
 struct ImStrv
 {
     const char* Begin;
     const char* End;
-    ImStrv() { Begin = End = NULL; }
-    ImStrv(const char* b) { Begin = b; End = NULL; }
-    ImStrv(const char* b, const char* e) { Begin = b; End = e; }
-    ImStrv(const char* b, size_t size) { Begin = b; End = b + size; }
-    bool Empty() const { return Begin == NULL || Begin == End || Begin[0] == 0; }
-    // void EnsureHasEnd() { if (End == NULL) End = Begin + Length(); }
-    // size_t Length() const
-    // {
-    //     if (Begin == NULL)
-    //         return 0;
-    //     if (End == NULL)
-    //         return strlen(Begin);
-    //     return (size_t)(End - Begin);
-    // }
-    bool operator==(ImStrv other) const
-    {
-        if (Begin == other.Begin && End == other.End)
-            return true;
-        size_t len = IM_IMSTR_LENGTH((*this));
-        if (len == IM_IMSTR_LENGTH(other))
-            return memcmp(Begin, other.Begin, len) == 0;
-        return false;
-    }
-    operator bool() const { return Begin != NULL; }
-    char operator[](int index) const { return Begin[index]; }
+    ImStrv()                            { Begin = End = NULL; }
+    ImStrv(const char* b)               { Begin = b; End = b ? b + strlen(b) : NULL; }
+    ImStrv(const char* b, const char* e){ Begin = b; End = e ? e : b + strlen(b); }
+    inline size_t length() const        { return (size_t)(End - Begin); }
+    inline bool empty() const           { return Begin == End; }    // == "" or == NULL
+    inline operator bool() const        { return Begin != NULL; }   // != NULL
 #ifdef IM_IMSTR_CLASS_EXTRA
-    IM_IMSTR_CLASS_EXTRA     // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImStrv.
+    IM_IMSTR_CLASS_EXTRA     // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your string types and ImStrv.
 #endif
+    // private: bool operator==(ImStrv) { return false; } // [DEBUG] Uncomment to catch undesirable uses of operators
+    // private: bool operator!=(ImStrv) { return false; }
 };
 
 IM_MSVC_RUNTIME_CHECKS_RESTORE
@@ -971,7 +951,7 @@ namespace ImGui
     // - Set io.IniFilename to NULL to load/save manually. Read io.WantSaveIniSettings description about handling .ini saving manually.
     // - Important: default value "imgui.ini" is relative to current working dir! Most apps will want to lock this to an absolute path (e.g. same path as executables).
     IMGUI_API void          LoadIniSettingsFromDisk(ImStrv ini_filename);                       // call after CreateContext() and before the first call to NewFrame(). NewFrame() automatically calls LoadIniSettingsFromDisk(io.IniFilename).
-    IMGUI_API void          LoadIniSettingsFromMemory(ImStrv ini_data, size_t ini_size= 0);     // call after CreateContext() and before the first call to NewFrame() to provide .ini data from your own data source.
+    IMGUI_API void          LoadIniSettingsFromMemory(ImStrv ini_data);                         // call after CreateContext() and before the first call to NewFrame() to provide .ini data from your own data source.
     IMGUI_API void          SaveIniSettingsToDisk(ImStrv ini_filename);                         // this is automatically called (if io.IniFilename is not empty) a few seconds after any modification that should be reflected in the .ini file (and also by DestroyContext).
     IMGUI_API const char*   SaveIniSettingsToMemory(size_t* out_ini_size = NULL);               // return a zero-terminated string with the .ini data which you can save by your own mean. call when io.WantSaveIniSettings is set, then save data by your own mean and clear io.WantSaveIniSettings.
 
@@ -2138,7 +2118,7 @@ struct ImGuiInputTextCallbackData
     ImWchar             EventChar;      // Character input                      // Read-write   // [CharFilter] Replace character with another one, or set to zero to drop. return 1 is equivalent to setting EventChar=0;
     ImGuiKey            EventKey;       // Key pressed (Up/Down/TAB)            // Read-only    // [Completion,History]
     char*               Buf;            // Text buffer                          // Read-write   // [Resize] Can replace pointer / [Completion,History,Always] Only write to pointed data, don't replace the actual pointer!
-    int                 BufTextLen;     // Text length (in bytes)               // Read-write   // [Resize,Completion,History,Always] Exclude zero-terminator storage. In C land: == strlen(some_text), in C++ land: IM_IMSTR_LENGTH(string)
+    int                 BufTextLen;     // Text length (in bytes)               // Read-write   // [Resize,Completion,History,Always] Exclude zero-terminator storage. In C land: == strlen(some_text), in C++ land: string.length()
     int                 BufSize;        // Buffer size (in bytes) = capacity+1  // Read-only    // [Resize,Completion,History,Always] Include zero-terminator storage. In C land == ARRAYSIZE(my_char_array), in C++ land: string.capacity()+1
     bool                BufDirty;       // Set if you modify Buf/BufTextLen!    // Write        // [Completion,History,Always]
     int                 CursorPos;      //                                      // Read-write   // [Completion,History,Always]
@@ -2183,7 +2163,7 @@ struct ImGuiPayload
 
     ImGuiPayload()  { Clear(); }
     void Clear()    { SourceId = SourceParentId = 0; Data = NULL; DataSize = 0; memset(DataType, 0, sizeof(DataType)); DataFrameCount = -1; Preview = Delivery = false; }
-    bool IsDataType(ImStrv type) const      { return DataFrameCount != -1 && type == ImStrv(DataType); }
+    bool IsDataType(ImStrv type) const      { size_t len = type.length(); return DataFrameCount != -1 && memcmp(DataType, type.Begin, len) == 0 && DataType[len] == 0; }
     bool IsPreview() const                  { return Preview; }
     bool IsDelivery() const                 { return Delivery; }
 };
@@ -2244,20 +2224,9 @@ struct ImGuiTextFilter
     void                Clear()          { InputBuf[0] = 0; Build(); }
     bool                IsActive() const { return !Filters.empty(); }
 
-    // [Internal]
-    struct ImGuiTextRange
-    {
-        const char*     b;
-        const char*     e;
-
-        ImGuiTextRange()                                { b = e = NULL; }
-        ImGuiTextRange(const char* _b, const char* _e)  { b = _b; e = _e; }
-        bool            empty() const                   { return b == e; }
-        IMGUI_API void  split(char separator, ImVector<ImGuiTextRange>* out) const;
-    };
-    char                    InputBuf[256];
-    ImVector<ImGuiTextRange>Filters;
-    int                     CountGrep;
+    char                InputBuf[256];
+    ImVector<ImStrv>    Filters;
+    int                 CountGrep;
 };
 
 // Helper: Growable text buffer for logging/accumulating text
