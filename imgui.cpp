@@ -1142,7 +1142,6 @@ ImGuiStyle::ImGuiStyle()
     TabMinWidthForCloseButton = 0.0f;           // Minimum width for close button to appear on an unselected tab when hovered. Set to 0.0f to always show when hovering, set to FLT_MAX to never show close button unless selected.
     ColorButtonPosition     = ImGuiDir_Right;   // Side of the color button in the ColorEdit4 widget (left/right). Defaults to ImGuiDir_Right.
     ButtonTextAlign         = ImVec2(0.5f,0.5f);// Alignment of button text when button is larger than text.
-    SelectableSpacing       = ImVec2(0,0);      // Horizontal and vertical spacing between selectables (by default they are canceling out the effect of ItemSpacing).
     SelectableTextAlign     = ImVec2(0.0f,0.0f);// Alignment of selectable text. Defaults to (0.0f, 0.0f) (top-left aligned). It's generally important to keep this left-aligned if you want to lay multiple items on a same line.
     SeparatorTextBorderSize = 3.0f;             // Thickkness of border in SeparatorText()
     SeparatorTextAlign      = ImVec2(0.0f,0.5f);// Alignment of text within the separator. Defaults to (0.0f, 0.5f) (left aligned, center).
@@ -1184,7 +1183,6 @@ void ImGuiStyle::ScaleAllSizes(float scale_factor)
     LogSliderDeadzone = ImFloor(LogSliderDeadzone * scale_factor);
     TabRounding = ImFloor(TabRounding * scale_factor);
     TabMinWidthForCloseButton = (TabMinWidthForCloseButton != FLT_MAX) ? ImFloor(TabMinWidthForCloseButton * scale_factor) : FLT_MAX;
-    SelectableSpacing = ImFloor(SelectableSpacing * scale_factor);
     SeparatorTextPadding = ImFloor(SeparatorTextPadding * scale_factor);
     DisplayWindowPadding = ImFloor(DisplayWindowPadding * scale_factor);
     DisplaySafeAreaPadding = ImFloor(DisplaySafeAreaPadding * scale_factor);
@@ -3048,7 +3046,6 @@ static const ImGuiDataVarInfo GStyleVarInfo[] =
     { ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImGuiStyle, GrabRounding) },        // ImGuiStyleVar_GrabRounding
     { ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImGuiStyle, TabRounding) },         // ImGuiStyleVar_TabRounding
     { ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImGuiStyle, ButtonTextAlign) },     // ImGuiStyleVar_ButtonTextAlign
-    { ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImGuiStyle, SelectableSpacing) },   // ImGuiStyleVar_SelectableSpacing
     { ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImGuiStyle, SelectableTextAlign) }, // ImGuiStyleVar_SelectableTextAlign
     { ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImGuiStyle, SeparatorTextBorderSize) },// ImGuiStyleVar_SeparatorTextBorderSize
     { ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImGuiStyle, SeparatorTextAlign) },     // ImGuiStyleVar_SeparatorTextAlign
