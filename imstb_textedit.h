@@ -740,7 +740,9 @@ retry:
             if (c == '\n' && state->single_line)
                break;
 
-            if (state->insert_mode && !STB_TEXT_HAS_SELECTION(state) && state->cursor < STB_TEXTEDIT_STRINGLEN(str)) {
+            if (state->insert_mode && !STB_TEXT_HAS_SELECTION(state) && state->cursor < STB_TEXTEDIT_STRINGLEN(str)
+               && (STB_TEXTEDIT_GETCHAR(str, state->cursor) != STB_TEXTEDIT_NEWLINE) // [DEAR IMGUI]
+               ) {
                stb_text_makeundo_replace(str, state, state->cursor, 1, 1);
                STB_TEXTEDIT_DELETECHARS(str, state->cursor, 1);
                if (STB_TEXTEDIT_INSERTCHARS(str, state->cursor, &ch, 1)) {

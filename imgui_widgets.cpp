@@ -3706,6 +3706,7 @@ static bool STB_TEXTEDIT_INSERTCHARS(ImGuiInputTextState* obj, int pos, const Im
 #define STB_TEXTEDIT_K_WORDRIGHT    0x20000D // keyboard input to move cursor right one word
 #define STB_TEXTEDIT_K_PGUP         0x20000E // keyboard input to move cursor up a page
 #define STB_TEXTEDIT_K_PGDOWN       0x20000F // keyboard input to move cursor down a page
+#define STB_TEXTEDIT_K_INSERT       0x200010 // keyboard input to toggle insert mode
 #define STB_TEXTEDIT_K_SHIFT        0x400000
 
 #define STB_TEXTEDIT_IMPLEMENTATION
@@ -4085,9 +4086,6 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
             if (input_requested_by_tabbing || (user_clicked && io.KeyCtrl))
                 select_all = true;
         }
-
-        if (flags & ImGuiInputTextFlags_AlwaysOverwrite)
-            state->Stb.insert_mode = 1; // stb field name is indeed incorrect (see #2863)
     }
 
     if (g.ActiveId != id && init_make_active)
@@ -4171,6 +4169,9 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         state->Edited = false;
         state->BufCapacityA = buf_size;
         state->Flags = flags;
+
+        // Update overwrite / insert mode
+        state->Stb.insert_mode = (flags & ImGuiInputTextFlags_AlwaysOverwrite) ? 1 : state->OverwriteMode; // stb field name is confusing (see #2863)
 
         // Although we are active we don't prevent mouse from hovering other elements unless we are interacting right now with the widget.
         // Down the line we should have a cleaner library-wide concept of Selected vs Active.
@@ -4309,6 +4310,7 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         else if (IsKeyPressed(ImGuiKey_DownArrow) && is_multiline)   { if (io.KeyCtrl) SetScrollY(draw_window, ImMin(draw_window->Scroll.y + g.FontSize, GetScrollMaxY())); else state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_TEXTEND : STB_TEXTEDIT_K_DOWN) | k_mask); }
         else if (IsKeyPressed(ImGuiKey_PageUp) && is_multiline)      { state->OnKeyPressed(STB_TEXTEDIT_K_PGUP | k_mask); scroll_y -= row_count_per_page * g.FontSize; }
         else if (IsKeyPressed(ImGuiKey_PageDown) && is_multiline)    { state->OnKeyPressed(STB_TEXTEDIT_K_PGDOWN | k_mask); scroll_y += row_count_per_page * g.FontSize; }
+        else if (IsKeyPressed(ImGuiKey_Insert) && !is_readonly)      { if ((flags & ImGuiInputTextFlags_AlwaysOverwrite) == 0) { state->OnKeyPressed(STB_TEXTEDIT_K_INSERT | k_mask); state->OverwriteMode = state->Stb.insert_mode != 0; } }
         else if (IsKeyPressed(ImGuiKey_Home))                        { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTSTART | k_mask : STB_TEXTEDIT_K_LINESTART | k_mask); }
         else if (IsKeyPressed(ImGuiKey_End))                         { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTEND | k_mask : STB_TEXTEDIT_K_LINEEND | k_mask); }
         else if (IsKeyPressed(ImGuiKey_Delete) && !is_readonly && !is_cut) { state->OnKeyPressed(STB_TEXTEDIT_K_DELETE | k_mask); }
@@ -4760,30 +4762,47 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
             }
         }
 
-        // We test for 'buf_display_max_length' as a way to avoid some pathological cases (e.g. single-line 1 MB string) which would make ImDrawList crash.
+        const ImVec2 cursor_screen_pos = draw_pos + cursor_offset - draw_scroll;
+        bool cursor_is_visible = false;
+        bool cursor_is_overwrite_mode = false;
+        if (render_cursor)
+        {
+            state->CursorAnim += io.DeltaTime;
+            cursor_is_visible = (!g.IO.ConfigInputTextCursorBlink) || (state->CursorAnim <= 0.0f) || ImFmod(state->CursorAnim, 1.20f) <= 0.80f;
+            const bool cursor_at_eol = state->TextW[state->Stb.cursor] == 0 || state->TextW[state->Stb.cursor] == '\n';
+            cursor_is_overwrite_mode = state->Stb.insert_mode && !state->HasSelection() && !cursor_at_eol;
+        }
+
+        // Draw blinking cursor (overwrite cursor)
+        if (cursor_is_visible && cursor_is_overwrite_mode)
+        {
+            ImVec2 rect_size = InputTextCalcTextSizeW(&g, &state->TextW[state->Stb.cursor], &state->TextW[state->Stb.cursor] + 1, NULL, NULL, false);
+            ImRect cursor_rect(cursor_screen_pos.x, cursor_screen_pos.y - rect_size.y, cursor_screen_pos.x + rect_size.x, cursor_screen_pos.y);
+            if (cursor_rect.Overlaps(clip_rect))
+                draw_window->DrawList->AddRectFilled(cursor_rect.Min, cursor_rect.Max, GetColorU32(ImGuiCol_Text, 0.20f));
+        }
+
+        // Draw text we test for 'buf_display_max_length' as a way to avoid some pathological cases (e.g. single-line 1 MB string) which would make ImDrawList crash.
         if (is_multiline || (buf_display_end - buf_display) < buf_display_max_length)
         {
             ImU32 col = GetColorU32(is_displaying_hint ? ImGuiCol_TextDisabled : ImGuiCol_Text);
             draw_window->DrawList->AddText(g.Font, g.FontSize, draw_pos - draw_scroll, col, buf_display, buf_display_end, 0.0f, is_multiline ? NULL : &clip_rect);
         }
 
-        // Draw blinking cursor
-        if (render_cursor)
+        // Draw blinking cursor (append cursor)
+        if (cursor_is_visible && !cursor_is_overwrite_mode)
         {
-            state->CursorAnim += io.DeltaTime;
-            bool cursor_is_visible = (!g.IO.ConfigInputTextCursorBlink) || (state->CursorAnim <= 0.0f) || ImFmod(state->CursorAnim, 1.20f) <= 0.80f;
-            ImVec2 cursor_screen_pos = ImFloor(draw_pos + cursor_offset - draw_scroll);
-            ImRect cursor_screen_rect(cursor_screen_pos.x, cursor_screen_pos.y - g.FontSize + 0.5f, cursor_screen_pos.x + 1.0f, cursor_screen_pos.y - 1.5f);
-            if (cursor_is_visible && cursor_screen_rect.Overlaps(clip_rect))
-                draw_window->DrawList->AddLine(cursor_screen_rect.Min, cursor_screen_rect.GetBL(), GetColorU32(ImGuiCol_Text));
+            ImRect cursor_rect(cursor_screen_pos.x, cursor_screen_pos.y - g.FontSize + 0.5f, cursor_screen_pos.x, cursor_screen_pos.y - 0.5f);
+            if (cursor_rect.Overlaps(clip_rect))
+                draw_window->DrawList->AddLine(cursor_rect.Min, cursor_rect.Max, GetColorU32(ImGuiCol_Text));
+        }
 
-            // Notify OS of text input position for advanced IME (-1 x offset so that Windows IME can cover our cursor. Bit of an extra nicety.)
-            if (!is_readonly)
-            {
-                g.PlatformImeData.WantVisible = true;
-                g.PlatformImeData.InputPos = ImVec2(cursor_screen_pos.x - 1.0f, cursor_screen_pos.y - g.FontSize);
-                g.PlatformImeData.InputLineHeight = g.FontSize;
-            }
+        // Notify OS of text input position for advanced IME (-1 x offset so that Windows IME can cover our cursor. Bit of an extra nicety.)
+        if (cursor_is_visible && !is_readonly)
+        {
+            g.PlatformImeData.WantVisible = true;
+            g.PlatformImeData.InputPos = ImVec2(cursor_screen_pos.x - 1.0f, cursor_screen_pos.y - g.FontSize);
+            g.PlatformImeData.InputLineHeight = g.FontSize;
         }
     }
     else
