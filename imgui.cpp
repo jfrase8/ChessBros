@@ -5933,7 +5933,7 @@ void ImGui::RenderWindowShadow(ImGuiWindow* window)
     float shadow_size = style.WindowShadowSize;
     ImU32 shadow_col = GetColorU32(ImGuiCol_WindowShadow);
     ImVec2 shadow_offset = ImVec2(ImCos(style.WindowShadowOffsetAngle), ImSin(style.WindowShadowOffsetAngle)) * style.WindowShadowOffsetDist;
-    window->DrawList->AddShadowRect(window->Pos, window->Pos + window->Size, shadow_col, shadow_size, shadow_offset, ImDrawShadowFlags_CutOutShapeBackground, window->WindowRounding);
+    window->DrawList->AddShadowRect(window->Pos, window->Pos + window->Size, shadow_col, shadow_size, shadow_offset, ImDrawFlags_ShadowCutOutShapeBackground, window->WindowRounding);
 }
 
 // Render title text, collapse button, close button

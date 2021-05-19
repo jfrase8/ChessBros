@@ -2084,7 +2084,7 @@ static void AddSubtractedRect(ImDrawList* draw_list, const ImVec2& a_min, const 
     }
 }
 
-void ImDrawList::AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags, float obj_rounding, ImDrawCornerFlags obj_rounding_corners)
+void ImDrawList::AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags, float obj_rounding)
 {
     if ((shadow_col & IM_COL32_A_MASK) == 0)
         return;
@@ -2093,12 +2093,12 @@ void ImDrawList::AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU
     int inner_rect_points_count = 0;
 
     // Generate a path describing the inner rectangle and copy it to our buffer
-    const bool is_filled = (shadow_flags & ImDrawShadowFlags_CutOutShapeBackground) == 0;
-    const bool is_rounded = (obj_rounding > 0.0f) && (obj_rounding_corners != ImDrawCornerFlags_None); // Do we have rounded corners?
+    const bool is_filled = (flags & ImDrawFlags_ShadowCutOutShapeBackground) == 0;
+    const bool is_rounded = (obj_rounding > 0.0f) && ((flags & ImDrawFlags_RoundCornersMask_) != ImDrawFlags_RoundCornersNone); // Do we have rounded corners?
     if (is_rounded && !is_filled)
     {
         IM_ASSERT(_Path.Size == 0);
-        PathRect(obj_min, obj_max, obj_rounding, obj_rounding_corners);
+        PathRect(obj_min, obj_max, obj_rounding, flags);
         inner_rect_points_count = _Path.Size;
         inner_rect_points = (ImVec2*)alloca(inner_rect_points_count * sizeof(ImVec2)); //-V630
         memcpy(inner_rect_points, _Path.Data, inner_rect_points_count * sizeof(ImVec2));
@@ -2144,9 +2144,9 @@ void ImDrawList::AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU
 }
 
 // Add a shadow for a convex shape described by points and num_points
-void ImDrawList::AddShadowConvexPoly(const ImVec2* points, int points_count, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags)
+void ImDrawList::AddShadowConvexPoly(const ImVec2* points, int points_count, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags)
 {
-    const bool is_filled = (shadow_flags & ImDrawShadowFlags_CutOutShapeBackground) == 0;
+    const bool is_filled = (flags & ImDrawFlags_ShadowCutOutShapeBackground) == 0;
     IM_ASSERT((is_filled || (ImLengthSqr(shadow_offset) < 0.00001f)) && "Drawing circle/convex shape shadows with no center fill and an offset is not currently supported");
     IM_ASSERT(points_count >= 3);
 
@@ -2369,7 +2369,7 @@ void ImDrawList::AddShadowConvexPoly(const ImVec2* points, int points_count, ImU
 
 // Draw a shadow for a circular object
 // Uses the draw path and so wipes any existing data there
-void ImDrawList::AddShadowCircle(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags, int num_segments)
+void ImDrawList::AddShadowCircle(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags, int num_segments)
 {
     // Obtain segment count
     if (num_segments <= 0)
@@ -2396,14 +2396,14 @@ void ImDrawList::AddShadowCircle(const ImVec2& obj_center, float obj_radius, ImU
         PathArcTo(obj_center, obj_radius, 0.0f, a_max, num_segments - 1);
 
     // Draw the shadow using the convex shape code
-    AddShadowConvexPoly(_Path.Data, _Path.Size, shadow_col, shadow_thickness, shadow_offset, shadow_flags);
+    AddShadowConvexPoly(_Path.Data, _Path.Size, shadow_col, shadow_thickness, shadow_offset, flags);
     _Path.Size = 0;
 }
 
-void ImDrawList::AddShadowNGon(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags, int num_segments)
+void ImDrawList::AddShadowNGon(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags, int num_segments)
 {
     IM_ASSERT(num_segments != 0);
-    AddShadowCircle(obj_center, obj_radius, shadow_col, shadow_thickness, shadow_offset, shadow_flags, num_segments);
+    AddShadowCircle(obj_center, obj_radius, shadow_col, shadow_thickness, shadow_offset, flags, num_segments);
 }
 
 //-----------------------------------------------------------------------------

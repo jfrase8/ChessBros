@@ -7786,8 +7786,8 @@ static void ShowExampleAppCustomRendering(bool* p_open)
 
                 ImVec2 r1(p.x + 50.0f, p.y + 50.0f);
                 ImVec2 r2(p.x + 150.0f, p.y + 150.0f);
-                ImDrawShadowFlags shadow_flags = shadow_filled ? ImDrawShadowFlags_None : ImDrawShadowFlags_CutOutShapeBackground;
-                draw_list->AddShadowRect(r1, r2, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_offset, shadow_flags, shape_rounding);
+                ImDrawFlags draw_flags = shadow_filled ? ImDrawFlags_None : ImDrawFlags_ShadowCutOutShapeBackground;
+                draw_list->AddShadowRect(r1, r2, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_offset, draw_flags, shape_rounding);
 
                 if (wireframe)
                     draw_list->AddRect(r1, r2, ImGui::GetColorU32(shape_color), shape_rounding);
@@ -7807,8 +7807,8 @@ static void ShowExampleAppCustomRendering(bool* p_open)
                 ImVec2 r1(p.x + 50.0f + off, p.y + 50.0f + off);
                 ImVec2 r2(p.x + 150.0f - off, p.y + 150.0f - off);
                 ImVec2 center(p.x + 100.0f, p.y + 100.0f);
-                ImDrawShadowFlags shadow_flags = shadow_filled ? ImDrawShadowFlags_None : ImDrawShadowFlags_CutOutShapeBackground;
-                draw_list->AddShadowCircle(center, 50.0f, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_filled ? shadow_offset : ImVec2(0.0f, 0.0f), shadow_flags, 0);
+                ImDrawFlags draw_flags = shadow_filled ? ImDrawFlags_None : ImDrawFlags_ShadowCutOutShapeBackground;
+                draw_list->AddShadowCircle(center, 50.0f, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_filled ? shadow_offset : ImVec2(0.0f, 0.0f), draw_flags, 0);
 
                 if (wireframe)
                     draw_list->AddCircle(center, 50.0f, ImGui::GetColorU32(shape_color), 0);
@@ -7883,8 +7883,8 @@ static void ShowExampleAppCustomRendering(bool* p_open)
                 }
 
                 // FIXME-SHADOWS: Offset forced to zero when shadow is not filled because it isn't supported
-                ImDrawShadowFlags shadow_flags = shadow_filled ? ImDrawShadowFlags_None : ImDrawShadowFlags_CutOutShapeBackground;
-                draw_list->AddShadowConvexPoly(poly_points, poly_points_count, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_filled ? shadow_offset : ImVec2(0.0f, 0.0f), shadow_flags);
+                ImDrawFlags draw_flags = shadow_filled ? ImDrawFlags_None : ImDrawFlags_ShadowCutOutShapeBackground;
+                draw_list->AddShadowConvexPoly(poly_points, poly_points_count, ImGui::GetColorU32(shadow_color), shadow_thickness, shadow_filled ? shadow_offset : ImVec2(0.0f, 0.0f), draw_flags);
 
                 if (wireframe)
                     draw_list->AddPolyline(poly_points, poly_points_count, ImGui::GetColorU32(shape_color), true, 1.0f);

@@ -183,7 +183,6 @@ typedef int ImGuiTableBgTarget;     // -> enum ImGuiTableBgTarget_   // Enum: A 
 //   With Visual Assist installed: ALT+G ("VAssistX.GoToImplementation") can also follow symbols in comments.
 typedef int ImDrawFlags;            // -> enum ImDrawFlags_          // Flags: for ImDrawList functions
 typedef int ImDrawListFlags;        // -> enum ImDrawListFlags_      // Flags: for ImDrawList instance
-typedef int ImDrawShadowFlags;      // -> enum ImDrawShadowFlags_    // Flags: for ImDrawList::AddShadowRect(), AddShadowCircle() etc.
 typedef int ImFontAtlasFlags;       // -> enum ImFontAtlasFlags_     // Flags: for ImFontAtlas build
 typedef int ImGuiBackendFlags;      // -> enum ImGuiBackendFlags_    // Flags: for io.BackendFlags
 typedef int ImGuiButtonFlags;       // -> enum ImGuiButtonFlags_     // Flags: for InvisibleButton()
@@ -2521,13 +2520,7 @@ enum ImDrawFlags_
     ImDrawFlags_RoundCornersAll             = ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight | ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight,
     ImDrawFlags_RoundCornersDefault_        = ImDrawFlags_RoundCornersAll, // Default to ALL corners if none of the _RoundCornersXX flags are specified.
     ImDrawFlags_RoundCornersMask_           = ImDrawFlags_RoundCornersAll | ImDrawFlags_RoundCornersNone,
-};
-
-// Flags for ImDrawList::AddShadowRect(), AddShadowCircle() etc.
-enum ImDrawShadowFlags_
-{
-    ImDrawShadowFlags_None                  = 0,
-    ImDrawShadowFlags_CutOutShapeBackground = 1 << 0   // Do not render the shadow shape under the objects to be shadowed to save on fill-rate or facilitate blending. Slower on CPU.
+    ImDrawFlags_ShadowCutOutShapeBackground = 1 << 9, // Do not render the shadow shape under the objects to be shadowed to save on fill-rate or facilitate blending. Slower on CPU.
 };
 
 // Flags for ImDrawList instance. Those are set automatically by ImGui:: functions from ImGuiIO settings, and generally not manipulated directly.
@@ -2622,17 +2615,17 @@ struct ImDrawList
     // - Add shadow for a object, with min/max or center/radius describing the object extents, and offset shifting the shadow.
     // - Rounding parameters refer to the object itself, not the shadow!
     // - By default, the area under the object is filled, because this is simpler to process.
-    //   Using the ImDrawShadowFlags_CutOutShapeBackground flag makes the function not render this area and leave a hole under the object.
+    //   Using the ImDrawFlags_ShadowCutOutShapeBackground flag makes the function not render this area and leave a hole under the object.
     //    - Shadows w/ fill under the object: a bit faster for CPU, more pixels rendered, visible/darkening if used behind a transparent shape.
     //      Typically used by: small, frequent objects, opaque objects, transparent objects if shadow darkening isn't an issue.
     //    - Shadows w/ hole under the object: a bit slower for CPU, less pixels rendered, no difference if used behind a transparent shape.
     //      Typically used by: large, infrequent objects, transparent objects if exact blending/color matter.
-    // - FIXME-SHADOWS: 'offset' + ImDrawShadowFlags_CutOutBackground are not currently supported together with AddShadowCircle(), AddShadowConvexPoly(), AddShadowNGon().
+    // - FIXME-SHADOWS: 'offset' + ImDrawFlags_ShadowCutOutShapeBackground are not currently supported together with AddShadowCircle(), AddShadowConvexPoly(), AddShadowNGon().
     #define IMGUI_HAS_SHADOWS 1
-    IMGUI_API void  AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags = 0, float obj_rounding = 0.0f, ImDrawCornerFlags obj_rounding_corners = ImDrawCornerFlags_All);
-    IMGUI_API void  AddShadowCircle(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags = 0, int obj_num_segments = 12);
-    IMGUI_API void  AddShadowConvexPoly(const ImVec2* points, int points_count, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags = 0);
-    IMGUI_API void  AddShadowNGon(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawShadowFlags shadow_flags, int obj_num_segments);
+    IMGUI_API void  AddShadowRect(const ImVec2& obj_min, const ImVec2& obj_max, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags = 0, float obj_rounding = 0.0f);
+    IMGUI_API void  AddShadowCircle(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags = 0, int obj_num_segments = 12);
+    IMGUI_API void  AddShadowConvexPoly(const ImVec2* points, int points_count, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags = 0);
+    IMGUI_API void  AddShadowNGon(const ImVec2& obj_center, float obj_radius, ImU32 shadow_col, float shadow_thickness, const ImVec2& shadow_offset, ImDrawFlags flags, int obj_num_segments);
 
     // Stateful path API, add points then finish with PathFillConvex() or PathStroke()
     // - Filled shapes must always use clockwise winding order. The anti-aliasing fringe depends on it. Counter-clockwise shapes will have "inward" anti-aliasing.
