@@ -3578,7 +3578,7 @@ static void GaussianBlur(float* data, int size)
 // Generate the actual pixel data for rounded corners in the atlas
 static void ImFontAtlasBuildRenderShadowTexData(ImFontAtlas* atlas)
 {
-    IM_ASSERT(atlas->TexPixelsAlpha8 != NULL);
+    IM_ASSERT(atlas->TexPixelsAlpha8 != NULL || atlas->TexPixelsRGBA32 != NULL);
     IM_ASSERT(atlas->ShadowRectIds[0] >= 0 && atlas->ShadowRectIds[1] >= 0);
 
     // Because of the blur, we have to generate the full 3x3 texture here, and then we chop that down to just the 2x2 section we need later.
@@ -3625,9 +3625,13 @@ static void ImFontAtlasBuildRenderShadowTexData(ImFontAtlas* atlas)
         for (int y = 0; y < shadow_tex_size; y++)
             for (int x = 0; x < shadow_tex_size; x++)
             {
-                const float alpha = tex_data[x + (y * size)];
                 const unsigned int offset = (int)(r.X + x) + (int)(r.Y + y) * tex_w;
-                atlas->TexPixelsAlpha8[offset] = (unsigned char)(0xFF * alpha);
+                const float alpha_f = tex_data[x + (y * size)];
+                const unsigned char alpha_8 = (unsigned char)(0xFF * alpha_f);
+                if (atlas->TexPixelsAlpha8)
+                    atlas->TexPixelsAlpha8[offset] = alpha_8;
+                else
+                    atlas->TexPixelsRGBA32[offset] = IM_COL32(255, 255, 255, alpha_8);
             }
 
         // Generate UVs for each of the nine sections, which are arranged in a 3x3 grid starting from 0 in the top-left and going across then down
@@ -3695,9 +3699,13 @@ static void ImFontAtlasBuildRenderShadowTexData(ImFontAtlas* atlas)
             {
                 const int src_x = ImClamp(x - src_x_offset, 0, size - 1);
                 const int src_y = ImClamp(y - src_y_offset, 0, size - 1);
-                const float alpha = tex_data[src_x + (src_y * size)];
+                const float alpha_f = tex_data[src_x + (src_y * size)];
+                const unsigned char alpha_8 = (unsigned char)(0xFF * alpha_f);
                 const unsigned int offset = (int)(r.X + x) + (int)(r.Y + y) * tex_w;
-                atlas->TexPixelsAlpha8[offset] = (unsigned char)(0xFF * alpha);
+                if (atlas->TexPixelsAlpha8)
+                    atlas->TexPixelsAlpha8[offset] = alpha_8;
+                else
+                    atlas->TexPixelsRGBA32[offset] = IM_COL32(255, 255, 255, alpha_8);
             }
 
         // Remove the padding we added
