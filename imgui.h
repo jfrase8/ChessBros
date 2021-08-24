@@ -2718,7 +2718,8 @@ struct ImFontAtlasShadowTexConfig
     float   TexDistanceFieldOffset; // How much to offset the distance field by (allows over/under-shadowing, potentially useful for accommodating rounded corners on the "casting" shape).
     bool    TexBlur;                // Do we want to Gaussian blur the shadow texture?
 
-    IMGUI_API ImFontAtlasShadowTexConfig();
+    inline ImFontAtlasShadowTexConfig() { memset(this, 0, sizeof(*this)); }
+    IMGUI_API void SetupDefaults();
     int     GetRectTexPadding() const   { return 2; }                                                   // Number of pixels of padding to add to the rectangular texture to avoid sampling artifacts at the edges.
     int     CalcRectTexSize() const     { return TexCornerSize + TexEdgeSize + GetRectTexPadding(); }   // The size of the texture area required for the actual 2x2 rectangle shadow texture (after the redundant corners have been removed). Padding is required here to avoid sampling artifacts at the edge adjoining the removed corners.    int     CalcConvexTexWidth() const;                                                                // The width of the texture area required for the convex shape shadow texture.
     int     GetConvexTexPadding() const { return 8; }                                                   // Number of pixels of padding to add to the convex shape texture to avoid sampling artifacts at the edges. This also acts as padding for the expanded corner triangles.
