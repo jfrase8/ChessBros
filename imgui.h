@@ -1431,6 +1431,14 @@ enum ImGuiKey : int
     ImGuiKey_GamepadRStickUp,       // [Analog]
     ImGuiKey_GamepadRStickDown,     // [Analog]
 
+    // High-level/virtual keys (for e.g. web apps events)
+    ImGuiKey_Copy,
+    ImGuiKey_Cut,
+    ImGuiKey_Paste,
+    ImGuiKey_Undo,
+    ImGuiKey_Redo,
+    ImGuiKey_SelectAll,
+
     // Aliases: Mouse Buttons (auto-submitted from AddMouseButtonEvent() calls)
     // - This is mirroring the data also written to io.MouseDown[], io.MouseWheel, in a format allowing them to be accessed via standard key API.
     ImGuiKey_MouseLeft, ImGuiKey_MouseRight, ImGuiKey_MouseMiddle, ImGuiKey_MouseX1, ImGuiKey_MouseX2, ImGuiKey_MouseWheelX, ImGuiKey_MouseWheelY,
