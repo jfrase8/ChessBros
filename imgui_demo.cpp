@@ -1268,7 +1268,7 @@ static void ShowDemoWindowWidgets()
             }
             ImGui::TreePop();
         }
-        IMGUI_DEMO_MARKER("Widgets/Selectables/Multiple Selection");
+        IMGUI_DEMO_MARKER("Widgets/Selectables/Multiple Selection (Simplified)");
         if (ImGui::TreeNode("Selection State: Multiple Selection (Simplified)"))
         {
             HelpMarker("Hold CTRL and click to select multiple items.");
@@ -1286,6 +1286,8 @@ static void ShowDemoWindowWidgets()
             }
             ImGui::TreePop();
         }
+        IMGUI_DEMO_MARKER("Widgets/Selectables/Multiple Selection (Full)");
+        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         if (ImGui::TreeNode("Selection State: Multiple Selection (Full)"))
         {
             // Demonstrate holding/updating multi-selection data and using the BeginMultiSelect/EndMultiSelect API to support range-selection and clipping.
@@ -1300,14 +1302,18 @@ static void ShowDemoWindowWidgets()
             // Test both Selectable() and TreeNode() widgets
             enum WidgetType { WidgetType_Selectable, WidgetType_TreeNode };
             static bool use_columns = false;
+            static bool use_drag_drop = true;
             static WidgetType widget_type = WidgetType_TreeNode;
             if (ImGui::RadioButton("Selectables", widget_type == WidgetType_Selectable)) { widget_type = WidgetType_Selectable; }
             ImGui::SameLine();
             if (ImGui::RadioButton("Tree nodes", widget_type == WidgetType_TreeNode)) { widget_type = WidgetType_TreeNode; }
             ImGui::SameLine();
             ImGui::Checkbox("Use 2 columns", &use_columns);
+            ImGui::SameLine();
+            ImGui::Checkbox("Use drag & drop", &use_drag_drop);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &ImGui::GetIO().ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::SameLine(); HelpMarker("Hold CTRL and click to select multiple items. Hold SHIFT to select a range. Keyboard is also supported.");
+            ImGui::Text("Selection size: %d", selection.GetSelectionSize());
 
             // Open a scrolling region
             const int ITEMS_COUNT = 1000;
@@ -1353,6 +1359,11 @@ static void ShowDemoWindowWidgets()
                             ImGui::Selectable(label, item_is_selected);
                             if (ImGui::IsItemToggledSelection())
                                 selection.SetSelected(n, !item_is_selected);
+                            if (use_drag_drop && ImGui::BeginDragDropSource())
+                            {
+                                ImGui::Text("(Dragging %d items)", selection.GetSelectionSize());
+                                ImGui::EndDragDropSource();
+                            }
                         }
                         else if (widget_type == WidgetType_TreeNode)
                         {
@@ -1363,6 +1374,11 @@ static void ShowDemoWindowWidgets()
                             bool open = ImGui::TreeNodeEx(label, tree_node_flags);
                             if (ImGui::IsItemToggledSelection())
                                 selection.SetSelected(n, !item_is_selected);
+                            if (use_drag_drop && ImGui::BeginDragDropSource())
+                            {
+                                ImGui::Text("(Dragging %d items)", selection.GetSelectionSize());
+                                ImGui::EndDragDropSource();
+                            }
                             if (open)
                                 ImGui::TreePop();
                         }
