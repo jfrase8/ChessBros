@@ -1436,8 +1436,7 @@ inline bool AddRoundCornerRect(ImDrawList* draw_list, const ImVec2& a, const ImV
     if ((round_corner_data.RectId < 0) || (square_corner_data.RectId < 0))
         return false; // No data for this configuration
 
-    ImTextureID tex_id = data->Font->ContainerAtlas->TexID;
-    IM_ASSERT(tex_id == draw_list->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
+    IM_ASSERT(data->Font->ContainerAtlas->TexID == draw_list->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
 
     // Calculate UVs for the three points we are interested in from the texture
     // - corner_uv[0] is the innermost point of the circle (solid for filled circles)
@@ -1853,8 +1852,7 @@ inline bool AddRoundCornerCircle(ImDrawList* draw_list, const ImVec2& center, fl
         return false;
 
     const ImDrawListSharedData* data = draw_list->_Data;
-    ImTextureID tex_id = data->Font->ContainerAtlas->TexID;
-    IM_ASSERT(tex_id == draw_list->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
+    IM_ASSERT(data->Font->ContainerAtlas->TexID == draw_list->_TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
     IM_ASSERT_PARANOID(!(data->Font->ContainerAtlas->Flags & ImFontAtlasFlags_NoBakedRoundCorners)); // No data in font
 
     // Filled rectangles have no stroke width
@@ -3413,6 +3411,7 @@ static void ImFontAtlasBuildRenderRoundCornersTexData(ImFontAtlas* atlas)
     const int w = atlas->TexWidth;
     const unsigned int max = ImFontAtlasRoundCornersMaxSize * ImFontAtlasRoundCornersMaxStrokeWidth;
     const int pad = FONT_ATLAS_ROUNDED_CORNER_TEX_PADDING;
+    IM_UNUSED(max);
     IM_ASSERT(atlas->TexRoundCornerData.Size == (int)max); // ImFontAtlasBuildRegisterRoundCornersCustomRects() will have created these for us
     IM_ASSERT(atlas->TexSquareCornerData.Size == (int)max);
 
@@ -4705,6 +4704,7 @@ bool ImGui::RenderWindowResizeGrip(ImDrawList* draw_list, const ImVec2& corner, 
         return false;
 
     ImFontAtlas* atlas = draw_list->_Data->Font->ContainerAtlas;
+    IM_UNUSED(atlas);
     IM_ASSERT(atlas->TexID == draw_list->_TextureIdStack.back());   // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
     IM_ASSERT(ImIsPowerOfTwo(flags));               // Only allow a single corner to be specified here.
     IM_ASSERT_PARANOID((atlas->Flags & ImFontAtlasFlags_NoBakedRoundCorners) == 0);
