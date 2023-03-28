@@ -1255,6 +1255,7 @@ enum ImGuiInputEventType
     ImGuiInputEventType_MousePos,
     ImGuiInputEventType_MouseWheel,
     ImGuiInputEventType_MouseButton,
+    ImGuiInputEventType_MouseSource,
     ImGuiInputEventType_Key,
     ImGuiInputEventType_Text,
     ImGuiInputEventType_Focus,
@@ -1276,6 +1277,7 @@ enum ImGuiInputSource
 struct ImGuiInputEventMousePos      { float PosX, PosY; };
 struct ImGuiInputEventMouseWheel    { float WheelX, WheelY; };
 struct ImGuiInputEventMouseButton   { int Button; bool Down; };
+struct ImGuiInputEventMouseSource   { ImGuiMouseSource MouseSource; };
 struct ImGuiInputEventKey           { ImGuiKey Key; bool Down; float AnalogValue; };
 struct ImGuiInputEventText          { unsigned int Char; };
 struct ImGuiInputEventAppFocused    { bool Focused; };
@@ -1289,6 +1291,7 @@ struct ImGuiInputEvent
         ImGuiInputEventMousePos     MousePos;       // if Type == ImGuiInputEventType_MousePos
         ImGuiInputEventMouseWheel   MouseWheel;     // if Type == ImGuiInputEventType_MouseWheel
         ImGuiInputEventMouseButton  MouseButton;    // if Type == ImGuiInputEventType_MouseButton
+        ImGuiInputEventMouseSource  MouseSource;    // if Type == ImGuiInputEventType_MouseSource
         ImGuiInputEventKey          Key;            // if Type == ImGuiInputEventType_Key
         ImGuiInputEventText         Text;           // if Type == ImGuiInputEventType_Text
         ImGuiInputEventAppFocused   AppFocused;     // if Type == ImGuiInputEventType_Focus

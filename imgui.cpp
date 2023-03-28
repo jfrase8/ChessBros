@@ -1246,6 +1246,7 @@ ImGuiIO::ImGuiIO()
     // Input (NB: we already have memset zero the entire structure!)
     MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
     MousePosPrev = ImVec2(-FLT_MAX, -FLT_MAX);
+    MouseSource = ImGuiMouseSource_Mouse;
     MouseDragThreshold = 6.0f;
     for (int i = 0; i < IM_ARRAYSIZE(MouseDownDuration); i++) MouseDownDuration[i] = MouseDownDurationPrev[i] = -1.0f;
     for (int i = 0; i < IM_ARRAYSIZE(KeysData); i++) { KeysData[i].DownDuration = KeysData[i].DownDurationPrev = -1.0f; }
@@ -1512,6 +1513,24 @@ void ImGuiIO::AddMouseWheelEvent(float wheel_x, float wheel_y)
     e.Source = ImGuiInputSource_Mouse;
     e.MouseWheel.WheelX = wheel_x;
     e.MouseWheel.WheelY = wheel_y;
+    g.InputEventsQueue.push_back(e);
+}
+
+void ImGuiIO::AddMouseSourceEvent(ImGuiMouseSource source)
+{
+    IM_ASSERT(Ctx != NULL);
+    ImGuiContext& g = *Ctx;
+
+    // Filter duplicate
+    const ImGuiInputEvent* latest_event = FindLatestInputEvent(&g, ImGuiInputEventType_MouseSource);
+    const ImGuiMouseSource latest_mouse_source = latest_event ? latest_event->MouseSource.MouseSource : g.IO.MouseSource;
+    if (latest_mouse_source == source)
+        return;
+
+    ImGuiInputEvent e;
+    e.Type = ImGuiInputEventType_MouseSource;
+    e.Source = ImGuiInputSource_Mouse;
+    e.MouseSource.MouseSource = source;
     g.InputEventsQueue.push_back(e);
 }
 
@@ -8662,12 +8681,19 @@ static const char* GetInputSourceName(ImGuiInputSource source)
     IM_ASSERT(IM_ARRAYSIZE(input_source_names) == ImGuiInputSource_COUNT && source >= 0 && source < ImGuiInputSource_COUNT);
     return input_source_names[source];
 }
+static const char* GetMouseSourceName(ImGuiMouseSource source)
+{
+    const char* mouse_source_names[] = { "Mouse", "TouchPad", "TouchScreen", "Pen" };
+    IM_ASSERT(IM_ARRAYSIZE(mouse_source_names) == ImGuiMouseSource_COUNT && source >= 0 && source < ImGuiMouseSource_COUNT);
+    return mouse_source_names[source];
+}
 static void DebugPrintInputEvent(const char* prefix, const ImGuiInputEvent* e)
 {
     ImGuiContext& g = *GImGui;
     if (e->Type == ImGuiInputEventType_MousePos)    { if (e->MousePos.PosX == -FLT_MAX && e->MousePos.PosY == -FLT_MAX) IMGUI_DEBUG_LOG_IO("%s: MousePos (-FLT_MAX, -FLT_MAX)\n", prefix); else IMGUI_DEBUG_LOG_IO("%s: MousePos (%.1f, %.1f)\n", prefix, e->MousePos.PosX, e->MousePos.PosY); return; }
     if (e->Type == ImGuiInputEventType_MouseButton) { IMGUI_DEBUG_LOG_IO("%s: MouseButton %d %s\n", prefix, e->MouseButton.Button, e->MouseButton.Down ? "Down" : "Up"); return; }
     if (e->Type == ImGuiInputEventType_MouseWheel)  { IMGUI_DEBUG_LOG_IO("%s: MouseWheel (%.3f, %.3f)\n", prefix, e->MouseWheel.WheelX, e->MouseWheel.WheelY); return; }
+    if (e->Type == ImGuiInputEventType_MouseSource) { IMGUI_DEBUG_LOG_IO("%s: MouseSource %d %s\n", prefix, e->MouseSource.MouseSource, GetMouseSourceName(e->MouseSource.MouseSource)); return; }
     if (e->Type == ImGuiInputEventType_Key)         { IMGUI_DEBUG_LOG_IO("%s: Key \"%s\" %s\n", prefix, ImGui::GetKeyName(e->Key.Key), e->Key.Down ? "Down" : "Up"); return; }
     if (e->Type == ImGuiInputEventType_Text)        { IMGUI_DEBUG_LOG_IO("%s: Text: %c (U+%08X)\n", prefix, e->Text.Char, e->Text.Char); return; }
     if (e->Type == ImGuiInputEventType_Focus)       { IMGUI_DEBUG_LOG_IO("%s: AppFocused %d\n", prefix, e->AppFocused.Focused); return; }
@@ -8723,6 +8749,13 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
             io.MouseWheelH += e->MouseWheel.WheelX;
             io.MouseWheel += e->MouseWheel.WheelY;
             mouse_wheeled = true;
+        }
+        else if (e->Type == ImGuiInputEventType_MouseSource)
+        {
+            // Trickling Rule: Stop processing queued events if any mouse action happened
+            if (trickle_fast_inputs && (mouse_moved || mouse_button_changed != 0 || mouse_wheeled))
+                break;
+            io.MouseSource = e->MouseSource.MouseSource;
         }
         else if (e->Type == ImGuiInputEventType_Key)
         {
@@ -13724,6 +13757,7 @@ void ImGui::ShowMetricsWindow(bool* p_open)
             Text("Mouse clicked:");  for (int i = 0; i < count; i++) if (IsMouseClicked(i)) { SameLine(); Text("b%d (%d)", i, io.MouseClickedCount[i]); }
             Text("Mouse released:"); for (int i = 0; i < count; i++) if (IsMouseReleased(i)) { SameLine(); Text("b%d", i); }
             Text("Mouse wheel: %.1f", io.MouseWheel);
+            Text("Mouse source: %s", GetMouseSourceName(io.MouseSource));
             Text("Pen Pressure: %.1f", io.PenPressure); // Note: currently unused
             Unindent();
         }
