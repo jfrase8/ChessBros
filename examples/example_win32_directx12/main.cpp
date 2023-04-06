@@ -158,10 +158,19 @@ int main(int, char**)
         {
             static float f = 0.0f;
             static int counter = 0;
+            static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("PianoMen");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::CheckboxFlags("ImGuiTreeNodeFlags_SpanFullWidth", &base_flags, ImGuiTreeNodeFlags_SpanFullWidth);
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+            ImGui::End();
+
+
+            // ME AND STEVE'S PROGRAM
+            ImGui::Begin("Note Type Choices");                      // Create a window called "Note Type Choices" and append into it.
+
+            ImGui::Text("These are different types of notes");      // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
@@ -175,6 +184,7 @@ int main(int, char**)
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
+
         }
 
         // 3. Show another simple window.
