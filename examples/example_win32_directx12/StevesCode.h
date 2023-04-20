@@ -8,6 +8,8 @@ using namespace std;
 namespace SCode
 {
 
+    
+
     bool whitesTurn = true;
 
     class ChessPiece
@@ -40,7 +42,7 @@ namespace SCode
 
 
         // ME AND STEVE'S PROGRAM
-        ImGui::Begin("Chess"); // Create a window called "Note Type Choices" and append into it.
+        ImGui::Begin("ABCDEFGHIJKLMNOPQRSTUVWXYZ"); // Create a window called "Note Type Choices" and append into it.
 
 
         static const char* names[64] =
@@ -57,7 +59,7 @@ namespace SCode
 
         static ChessPiece board[4] =
         {
-           ChessPiece("Rook", 1), ChessPiece("Knight", 1), ChessPiece("Bishop", 0), ChessPiece("Queen", 0)
+           ChessPiece("T", 1), ChessPiece("Knight", 1), ChessPiece("Bishop", 0), ChessPiece("Queen", 0)
         };
 
 
