@@ -58,13 +58,24 @@ namespace JCode
 
         static ChessPiece board[] =
         {
-           ChessPiece("Rook", 0), ChessPiece("Knight", 0), ChessPiece("Bishop", 0), ChessPiece("Queen", 0), ChessPiece("King", 0), ChessPiece("Bishop", 0), ChessPiece("Knight", 0), ChessPiece("Rook", 0),
-           ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0),
+
+            // Key //
+
+            // White:
+            // Pawn - O, Rook - P, Knight - Q, Bishop - R, King - S, Queen - T
+
+            // Black:
+            // Pawn - U, Rook - V, Knight - W, Bishop - Z, King - X, Queen - Y
+
+
+           ChessPiece("P", 0), ChessPiece("Q", 0), ChessPiece("R", 0), ChessPiece("T", 0), ChessPiece("S", 0), ChessPiece("R", 0), ChessPiece("Q", 0), ChessPiece("P", 0),
+           ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0), ChessPiece("O", 0),
            ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
            ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
            ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
-           ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1),
-           ChessPiece("Rook", 1), ChessPiece("Knight", 1), ChessPiece("Bishop", 0), ChessPiece("Queen", 0), ChessPiece("King", 1), ChessPiece("Bishop", 1), ChessPiece("Knight", 0), ChessPiece("Rook", 0)
+           ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
+           ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1),
+           ChessPiece("V", 1), ChessPiece("W", 1), ChessPiece("Z", 1), ChessPiece("Y", 1), ChessPiece("X", 1), ChessPiece("Z", 1), ChessPiece("W", 1), ChessPiece("V", 1)
         };
 
 
@@ -109,7 +120,7 @@ namespace JCode
                         if (board[payload_n].team == 0 && whitesTurn && board[n].team != 0)
                         {
                             // Check if white is in check
-                            if (whiteInCheck)
+                            if (!whiteInCheck)
                             {
                                 // Check if piece being dragged is king
                                 //if ()

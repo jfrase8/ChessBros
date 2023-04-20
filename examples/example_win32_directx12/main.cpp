@@ -155,8 +155,8 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        //JCode::RenderJoelUI();
-        SCode::RenderSteveUI();
+        JCode::RenderJoelUI();
+        //SCode::RenderSteveUI();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
