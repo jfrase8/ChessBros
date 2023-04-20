@@ -10,12 +10,16 @@ namespace JCode
 {
 
     bool whitesTurn = true;
+    bool whiteInCheck = false;
+    bool blackInCheck = false;
+
 
     class ChessPiece
     {
         public:
             const char* piece;
-            int team;
+            int team; // 0 = White, 1 = Black, -1 = Empty
+            bool inCheck = false;
 
             ChessPiece(const char* pieceName, int teamColor)
             {
@@ -23,7 +27,17 @@ namespace JCode
                 team = teamColor;
             }
 
-            
+            void PieceTaken()
+            {
+                piece = "";
+                team = -1;
+            }
+
+            void Checked()
+            {
+                if (team == 0) whiteInCheck = true;
+                else blackInCheck = true;
+            }
     };
 
     void RenderJoelUI()
@@ -42,22 +56,15 @@ namespace JCode
         // ME AND STEVE'S PROGRAM
         ImGui::Begin("Chess"); // Create a window called "Note Type Choices" and append into it.
 
-
-        static const char* names[64] =
+        static ChessPiece board[] =
         {
-            "Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook",
-            "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn",
-            "", "", "", "", "", "", "", "",
-            "", "", "", "", "", "", "", "",
-            "", "", "", "", "", "", "", "",
-            "", "", "", "", "", "", "", "",
-            "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn", "Pawn",
-            "Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook",
-        };
-
-        static ChessPiece board[4] =
-        {
-           ChessPiece("Rook", 1), ChessPiece("Knight", 1), ChessPiece("Bishop", 0), ChessPiece("Queen", 0)
+           ChessPiece("Rook", 0), ChessPiece("Knight", 0), ChessPiece("Bishop", 0), ChessPiece("Queen", 0), ChessPiece("King", 0), ChessPiece("Bishop", 0), ChessPiece("Knight", 0), ChessPiece("Rook", 0),
+           ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0), ChessPiece("Pawn", 0),
+           ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
+           ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
+           ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1), ChessPiece("", -1),
+           ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1), ChessPiece("Pawn", 1),
+           ChessPiece("Rook", 1), ChessPiece("Knight", 1), ChessPiece("Bishop", 0), ChessPiece("Queen", 0), ChessPiece("King", 1), ChessPiece("Bishop", 1), ChessPiece("Knight", 0), ChessPiece("Rook", 0)
         };
 
 
@@ -83,20 +90,49 @@ namespace JCode
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_DEMO_CELL"))
                 {
+                    // payload_n is a reference to the original space that the dragged piece was in
                     IM_ASSERT(payload->DataSize == sizeof(int));
                     int payload_n = *(const int*)payload->Data;
 
-                    if (board[payload_n].team == 0 && whitesTurn)
+                    // If statement makes sure empty spaces cannot be dragged
+                    if (board[payload_n].team != -1)
                     {
-                        board[n] = board[payload_n];
-                        board[payload_n].piece = "";
-                        whitesTurn = false;
-                    }
-                    else if (board[payload_n].team == 1 && !whitesTurn)
-                    {
-                        board[n] = board[payload_n];
-                        board[payload_n].piece = "";
-                        whitesTurn = true;
+
+                        //// Taking pieces ////
+
+                        // if statement arguments:
+                        // -Team is White
+                        // -It is White's turn
+                        // -Piece being taken is not White
+                        // -White is not in check
+
+                        if (board[payload_n].team == 0 && whitesTurn && board[n].team != 0)
+                        {
+                            // Check if white is in check
+                            if (whiteInCheck)
+                            {
+                                // Check if piece being dragged is king
+                                //if ()
+
+                                // Take piece
+                                board[n] = board[payload_n];
+                                board[payload_n].PieceTaken();
+                                whitesTurn = false;
+                            }
+                        }
+
+                        // Blacks Turn
+                        else if (board[payload_n].team == 1 && !whitesTurn)
+                        {
+                            // If statement makes sure White doesn't take its own piece
+                            if (board[n].team != 0)
+                            {
+
+                                board[n] = board[payload_n];
+                                board[payload_n].PieceTaken();
+                                whitesTurn = true;
+                            }
+                        }
                     }
                 }
                 ImGui::EndDragDropTarget();
