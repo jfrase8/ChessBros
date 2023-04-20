@@ -110,6 +110,8 @@ int main(int, char**)
         g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
         g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 
+    io.Fonts->AddFontFromFileTTF("../../misc/fonts/chess TFB.ttf", 65.0f);
+
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
     // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
@@ -153,7 +155,7 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        JCode::RenderJoelUI();
+        //JCode::RenderJoelUI();
         SCode::RenderSteveUI();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
