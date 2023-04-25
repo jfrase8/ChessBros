@@ -14,7 +14,7 @@ namespace JCode
     bool blackInCheck = false;
 
 
-    class ChessPiece
+    class ChessPiece : ChessBoard
     {
         public:
             const char* piece;
@@ -38,6 +38,59 @@ namespace JCode
                 if (team == 0) whiteInCheck = true;
                 else blackInCheck = true;
             }
+
+            bool ValidMove(int payload_n, int n)
+            {
+
+                // Check for piece type //
+            }
+
+            []int FindValidMoves(int payload_n)
+            {
+                // Find row and column of piece
+                int row = payload_n / 8;
+                int column = payload_n % 8;
+
+
+                // Find valid moving squares
+                
+                //Knight
+                if (piece == "Q" || piece == "W")
+                {
+                    
+                }
+            }
+
+    };
+
+    class ChessBoard
+    {
+        public:
+
+            // Default Constructor
+            ChessBoard() = default;
+            ChessBoard(int arr[]);
+            ChessPiece board[64] = {
+
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
+                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1)
+            };
+
+            // Constructor
+            ChessBoard(ChessPiece guiBoard[])
+            {
+
+                for (int i = 0; i < 8; i++)
+                {
+                    board[i] = guiBoard[i];
+                }
+            }
     };
 
     void RenderJoelUI()
@@ -48,13 +101,13 @@ namespace JCode
         static int counter = 0;
         static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-        ImGui::Begin("PianoMen");
+        //ImGui::Begin("PianoMen");
 
-        ImGui::End();
+        //ImGui::End();
 
 
         // ME AND STEVE'S PROGRAM
-        ImGui::Begin("Chess"); // Create a window called "Note Type Choices" and append into it.
+        ImGui::Begin("Chess"); // Create a window called "" and append into it.
 
         static ChessPiece board[] =
         {
@@ -77,6 +130,9 @@ namespace JCode
            ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1),
            ChessPiece("V", 1), ChessPiece("W", 1), ChessPiece("Z", 1), ChessPiece("Y", 1), ChessPiece("X", 1), ChessPiece("Z", 1), ChessPiece("W", 1), ChessPiece("V", 1)
         };
+
+        // Copy of chess board
+        ChessBoard logicBoard = ChessBoard(board);
 
 
         for (int n = 0; n < IM_ARRAYSIZE(board); n++)
@@ -136,7 +192,7 @@ namespace JCode
                         else if (board[payload_n].team == 1 && !whitesTurn)
                         {
                             // If statement makes sure White doesn't take its own piece
-                            if (board[n].team != 0)
+                            if (board[n].team != 1)
                             {
 
                                 board[n] = board[payload_n];
