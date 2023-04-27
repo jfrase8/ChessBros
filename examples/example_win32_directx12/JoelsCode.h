@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include <stdio.h>
 #include <string>
+#include <iostream>
+
 
 using namespace std;
 
@@ -14,7 +16,7 @@ namespace JCode
     bool blackInCheck = false;
 
 
-    class ChessPiece : ChessBoard
+    class ChessPiece
     {
         public:
             const char* piece;
@@ -25,6 +27,7 @@ namespace JCode
             {
                 piece = pieceName;
                 team = teamColor;
+
             }
 
             void PieceTaken()
@@ -39,26 +42,53 @@ namespace JCode
                 else blackInCheck = true;
             }
 
-            bool ValidMove(int payload_n, int n)
+            bool FindValidMoves(int payload_n, int n)
             {
 
-                // Check for piece type //
-            }
-
-            []int FindValidMoves(int payload_n)
-            {
-                // Find row and column of piece
-                int row = payload_n / 8;
-                int column = payload_n % 8;
+                cout << payload_n;
+                cout << n;
 
 
-                // Find valid moving squares
+                cout << "Function Called";
+
+                // Find row and column of old space
+                int oldRow = payload_n / 8;
+                int oldColumn = payload_n % 8;
+
+                // Find row and column of new space
+                int newRow = n / 8;
+                int newColumn = n % 8;
+
+
+                // Find valid moving squares //
                 
                 //Knight
-                if (piece == "Q" || piece == "W")
+                /*if (strcmp(piece, "Q") == 0 || strcmp(piece, "W") == 0)
                 {
-                    
-                }
+                    int rows[] = { 2,2,-2,-2,1,1,-1,-1 };
+                    int columns[] = { -1,1,1,-1,2,-2,2,-2 };
+
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        rows[i] += oldRow;
+                        cout << "Valid Row: " + rows[i];
+                        
+
+                        columns[i] += oldColumn;
+                        cout << " Valid Column: " + columns[i] << endl;
+                    }
+
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        if (newRow == rows[i] && newColumn == columns[i])
+                        {
+                            return true;
+                        }
+                        return false;
+                    }
+                }*/
+
+                return true;
             }
 
     };
@@ -181,10 +211,14 @@ namespace JCode
                                 // Check if piece being dragged is king
                                 //if ()
 
-                                // Take piece
-                                board[n] = board[payload_n];
-                                board[payload_n].PieceTaken();
-                                whitesTurn = false;
+                                // Check for valid move
+                                if (board[payload_n].FindValidMoves(payload_n, n))
+                                {
+                                    // Take piece
+                                    board[n] = board[payload_n];
+                                    board[payload_n].PieceTaken();
+                                    whitesTurn = false;
+                                }
                             }
                         }
 
@@ -195,9 +229,14 @@ namespace JCode
                             if (board[n].team != 1)
                             {
 
-                                board[n] = board[payload_n];
-                                board[payload_n].PieceTaken();
-                                whitesTurn = true;
+                                // Check for valid move
+                                if (board[payload_n].FindValidMoves(payload_n, n))
+                                {
+                                    // Take piece
+                                    board[n] = board[payload_n];
+                                    board[payload_n].PieceTaken();
+                                    whitesTurn = true;
+                                }
                             }
                         }
                     }
