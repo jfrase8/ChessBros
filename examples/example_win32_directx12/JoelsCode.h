@@ -23,6 +23,7 @@ namespace JCode
             int team; // 0 = White, 1 = Black, -1 = Empty
             bool inCheck = false;
 
+            // Constructor
             ChessPiece(const char* pieceName, int teamColor)
             {
                 piece = pieceName;
@@ -30,63 +31,208 @@ namespace JCode
 
             }
 
+            // Gets rid of piece (Turns it into empty square)
             void PieceTaken()
             {
                 piece = "";
                 team = -1;
             }
 
+            // King is in check
             void Checked()
             {
                 if (team == 0) whiteInCheck = true;
                 else blackInCheck = true;
             }
 
+            // Finds all possible moves of this specific piece, and returns true if move is valid
             bool FindValidMoves(int payload_n, int n)
             {
 
-                cout << payload_n;
-                cout << n;
-
-
-                cout << "Function Called";
-
                 // Find row and column of old space
                 int oldRow = payload_n / 8;
+                cout << "Old Row: " << oldRow << endl;
                 int oldColumn = payload_n % 8;
+                cout << "Old Column: " << oldColumn << endl;
 
                 // Find row and column of new space
                 int newRow = n / 8;
+                cout << "New Row: " << newRow << endl;
                 int newColumn = n % 8;
-
+                cout << "New Column: " << newColumn << endl;
 
                 // Find valid moving squares //
                 
                 //Knight
-                /*if (strcmp(piece, "Q") == 0 || strcmp(piece, "W") == 0)
+                if (strcmp(piece, "Q") == 0 || strcmp(piece, "W") == 0)
                 {
+                    // Valid knight moves
                     int rows[] = { 2,2,-2,-2,1,1,-1,-1 };
                     int columns[] = { -1,1,1,-1,2,-2,2,-2 };
 
+                    // Creates array of all possible moves
                     for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
                     {
                         rows[i] += oldRow;
-                        cout << "Valid Row: " + rows[i];
+                        cout << "Valid Row: " << rows[i];
                         
 
                         columns[i] += oldColumn;
-                        cout << " Valid Column: " + columns[i] << endl;
+                        cout << " Valid Column: " << columns[i] << endl;
                     }
 
+                    // Checks if move is equal to a valid move
                     for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
                     {
                         if (newRow == rows[i] && newColumn == columns[i])
                         {
+                            cout << "Returned True";
                             return true;
                         }
-                        return false;
+                        
                     }
-                }*/
+                    return false;
+                }
+
+                //Bishop
+                if (strcmp(piece, "R") == 0 || strcmp(piece, "Z") == 0)
+                {
+                    // Valid bishop moves
+                    int rows[28] =    { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                        1, 2, 3, 4, 5, 6, 7,-1,-2,-3,-4,-5,-6,-7 };
+
+                    int columns[28] = { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                       -1,-2,-3,-4,-5,-6,-7, 1, 2, 3, 4, 5, 6, 7 };
+
+                    // Creates array of all possible moves
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        rows[i] += oldRow;
+                        cout << "Valid Row: " << rows[i];
+
+
+                        columns[i] += oldColumn;
+                        cout << " Valid Column: " << columns[i] << endl;
+                    }
+
+                    // Checks if move is equal to a valid move
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        if (newRow == rows[i] && newColumn == columns[i])
+                        {
+                            cout << "Returned True" << endl;
+                            cout << endl;
+                            return true;
+                        }
+
+                    }
+                    return false;
+                }
+
+                //Rook
+                if (strcmp(piece, "P") == 0 || strcmp(piece, "V") == 0)
+                {
+                    // Valid rook moves
+                    int rows[28] =    { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                        0,0,0,0,0,0,0, 0, 0, 0, 0, 0, 0, 0 };
+
+                    int columns[28] = { 0,0,0,0,0,0,0, 0, 0, 0, 0, 0, 0, 0,
+                                        1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7 };
+
+                    // Creates array of all possible moves
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        rows[i] += oldRow;
+                        cout << "Valid Row: " << rows[i];
+
+
+                        columns[i] += oldColumn;
+                        cout << " Valid Column: " << columns[i] << endl;
+                    }
+
+                    // Checks if move is equal to a valid move
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        if (newRow == rows[i] && newColumn == columns[i])
+                        {
+                            cout << "Returned True" << endl;
+                            cout << endl;
+                            return true;
+                        }
+
+                    }
+                    return false;
+                }
+
+                //Queen
+                if (strcmp(piece, "T") == 0 || strcmp(piece, "Y") == 0)
+                {
+                    // Valid queen moves
+                    int rows[56] =    { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                            0,0,0,0,0,0,0, 0, 0, 0, 0, 0, 0, 0,
+                                        1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                            1, 2, 3, 4, 5, 6, 7,-1,-2,-3,-4,-5,-6,-7 };
+
+                    int columns[56] = { 0,0,0,0,0,0,0, 0, 0, 0, 0, 0, 0, 0,
+                                            1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                        1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
+                                           -1,-2,-3,-4,-5,-6,-7, 1, 2, 3, 4, 5, 6, 7 };
+
+                    // Creates array of all possible moves
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        rows[i] += oldRow;
+                        cout << "Valid Row: " << rows[i];
+
+
+                        columns[i] += oldColumn;
+                        cout << " Valid Column: " << columns[i] << endl;
+                    }
+
+                    // Checks if move is equal to a valid move
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        if (newRow == rows[i] && newColumn == columns[i])
+                        {
+                            cout << "Returned True" << endl;
+                            cout << endl;
+                            return true;
+                        }
+
+                    }
+                    return false;
+                }
+
+                //King
+                if (strcmp(piece, "S") == 0 || strcmp(piece, "X") == 0)
+                {
+                    // Valid king moves
+                    int rows[] =    { 1,1, 1,0,-1,-1, 0,-1};
+                    int columns[] = { 0,1,-1,1,-1, 1,-1, 0 };
+
+                    // Creates array of all possible moves
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        rows[i] += oldRow;
+                        cout << "Valid Row: " << rows[i];
+
+
+                        columns[i] += oldColumn;
+                        cout << " Valid Column: " << columns[i] << endl;
+                    }
+
+                    // Checks if move is equal to a valid move
+                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    {
+                        if (newRow == rows[i] && newColumn == columns[i])
+                        {
+                            cout << "Returned True";
+                            return true;
+                        }
+
+                    }
+                    return false;
+                }
 
                 return true;
             }
