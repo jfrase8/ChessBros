@@ -13,7 +13,7 @@
 #include <dxgi1_4.h>
 #include <tchar.h>
 
-#include "JoelsCode.h"
+#include "JoelSteveCode.h"
 #include "StevesCode.h"
 
 #ifdef _DEBUG
@@ -155,7 +155,7 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        JCode::RenderJoelUI();
+        JSCode::RenderJoelUI();
         //SCode::RenderSteveUI();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
