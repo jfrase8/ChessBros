@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <list>
 
 
 using namespace std;
 
-namespace JCode
+namespace JSCode
 {
 
     bool whitesTurn = true;
@@ -80,6 +81,7 @@ namespace JCode
 
                         columns[i] += oldColumn;
                         cout << " Valid Column: " << columns[i] << endl;
+
                     }
 
                     // Checks if move is equal to a valid move
@@ -99,34 +101,110 @@ namespace JCode
                 #pragma region Bishop
                 if (strcmp(piece, "R") == 0 || strcmp(piece, "Z") == 0)
                 {
-                    // Valid bishop moves
+                    // Valid bishop moves (Old)
                     int rows[28] =    { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
                                         1, 2, 3, 4, 5, 6, 7,-1,-2,-3,-4,-5,-6,-7 };
 
                     int columns[28] = { 1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
                                        -1,-2,-3,-4,-5,-6,-7, 1, 2, 3, 4, 5, 6, 7 };
 
+                    // (New)
+                    list<int> bishopMoves;
+                    
+                    // (Old)
                     // Creates array of all possible moves
                     for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
                     {
                         rows[i] += oldRow;
-                        cout << "Valid Row: " << rows[i];
-
 
                         columns[i] += oldColumn;
-                        cout << " Valid Column: " << columns[i] << endl;
                     }
 
-                    // Checks if move is equal to a valid move
-                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    // (Old)
+                    //// Checks if move is equal to a valid move
+                    //for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    //{
+                    //    if (newRow == rows[i] && newColumn == columns[i])
+                    //    {
+                    //        cout << "Returned True" << endl;
+                    //        cout << endl;
+                    //        return true;
+                    //    }
+
+                    //}
+
+                    // Find all valid moves (New)
+                    int direction = 1;
+                    while (direction <= 4)
                     {
-                        if (newRow == rows[i] && newColumn == columns[i])
+                        int count = 0;
+                        int currentMove = payload_n;
+
+                        int addition = 9;
+                        int maxMin = 63;
+
+                        // Down-Left Diagnal
+                        if (direction == 2)
                         {
-                            cout << "Returned True" << endl;
-                            cout << endl;
-                            return true;
+                            addition = 7;
+                            maxMin = 63;
+                        }
+                        // Up-Left Diagnal
+                        if (direction == 3)
+                        {
+                            addition = -9;
+                            maxMin = 0;
+                        }
+                        //Up-Right Diagnal
+                        if (direction == 4)
+                        {
+                            addition = -7;
+                            maxMin = 0;
                         }
 
+                        while (count < 7)
+                        {
+                            currentMove += addition;
+                            if (maxMin == 0)
+                            {
+                                if (currentMove >= maxMin)
+                                {
+                                    // Check if a piece is in the way
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    bishopMoves.push_back(currentMove);
+
+                                }
+                            }
+                            else
+                            {
+                                if (currentMove <= maxMin)
+                                {
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    bishopMoves.push_back(currentMove);
+
+                                }
+                            }
+                            
+                        }
+                        direction++;
+                    }
+
+                    for (auto it = bishopMoves.begin(); it != bishopMoves.end(); it++)
+                    {
+                        if (*it == n)
+                            return true;
                     }
                     return false;
                 }
@@ -142,27 +220,102 @@ namespace JCode
                     int columns[28] = { 0,0,0,0,0,0,0, 0, 0, 0, 0, 0, 0, 0,
                                         1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7 };
 
+                    list<int> rookMoves;
+
                     // Creates array of all possible moves
                     for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
                     {
                         rows[i] += oldRow;
-                        cout << "Valid Row: " << rows[i];
-
 
                         columns[i] += oldColumn;
-                        cout << " Valid Column: " << columns[i] << endl;
                     }
 
-                    // Checks if move is equal to a valid move
-                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    //// Checks if move is equal to a valid move
+                    //for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    //{
+                    //    if (newRow == rows[i] && newColumn == columns[i])
+                    //    {
+                    //        cout << "Returned True" << endl;
+                    //        cout << endl;
+                    //        return true;
+                    //    }
+
+                    //}
+                    //return false;
+
+
+                    int direction = 1;
+                    while (direction <= 4)
                     {
-                        if (newRow == rows[i] && newColumn == columns[i])
+                        int count = 0;
+                        int currentMove = payload_n;
+
+
+                        // Default is right
+                        int addition = 1;
+                        int maxMin = 63;
+
+                        // Down
+                        if (direction == 2)
                         {
-                            cout << "Returned True" << endl;
-                            cout << endl;
-                            return true;
+                            addition = 8;
+                            maxMin = 63;
+                        }
+                        // Left
+                        if (direction == 3)
+                        {
+                            addition = -1;
+                            maxMin = 0;
+                        }
+                        // Up
+                        if (direction == 4)
+                        {
+                            addition = -8;
+                            maxMin = 0;
                         }
 
+                        while (count < 7)
+                        {
+                            currentMove += addition;
+                            if (maxMin == 0)
+                            {
+                                if (currentMove >= maxMin)
+                                {
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    rookMoves.push_back(currentMove);
+
+                                }
+                            }
+                            else
+                            {
+                                if (currentMove <= maxMin)
+                                {
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    rookMoves.push_back(currentMove);
+
+                                }
+                            }
+
+                        }
+                        direction++;
+                    }
+
+                    for (auto it = rookMoves.begin(); it != rookMoves.end(); it++)
+                    {
+                        if (*it == n)
+                            return true;
                     }
                     return false;
                 }
@@ -182,27 +335,123 @@ namespace JCode
                                         1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7,
                                            -1,-2,-3,-4,-5,-6,-7, 1, 2, 3, 4, 5, 6, 7 };
 
+                    list<int> queenMoves;
+
                     // Creates array of all possible moves
                     for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
                     {
                         rows[i] += oldRow;
-                        cout << "Valid Row: " << rows[i];
-
 
                         columns[i] += oldColumn;
-                        cout << " Valid Column: " << columns[i] << endl;
                     }
 
-                    // Checks if move is equal to a valid move
-                    for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    //// Checks if move is equal to a valid move
+                    //for (int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+                    //{
+                    //    if (newRow == rows[i] && newColumn == columns[i])
+                    //    {
+                    //        cout << "Returned True" << endl;
+                    //        cout << endl;
+                    //        return true;
+                    //    }
+
+                    //}
+
+                    int direction = 1;
+                    while (direction <= 8)
                     {
-                        if (newRow == rows[i] && newColumn == columns[i])
+                        int count = 0;
+                        int currentMove = payload_n;
+
+                        // Right
+                        int addition = 1;
+                        int maxMin = 63;
+
+                        // Down-Right Diagnal
+                        if (direction == 2)
                         {
-                            cout << "Returned True" << endl;
-                            cout << endl;
-                            return true;
+                            addition = 9;
+                            maxMin = 63;
+                        }
+                        // Down
+                        if (direction == 3)
+                        {
+                            addition = 8;
+                            maxMin = 63;
+                        }
+                        // Down-Left Diagnal
+                        if (direction == 4)
+                        {
+                            addition = 7;
+                            maxMin = 63;
+                        }
+                        // Left
+                        if (direction == 5)
+                        {
+                            addition = -1;
+                            maxMin = 0;
+                        }
+                        // Up-Left Diagnal
+                        if (direction == 6)
+                        {
+                            addition = -9;
+                            maxMin = 0;
+                        }
+                        // Up
+                        if (direction == 7)
+                        {
+                            addition = -8;
+                            maxMin = 0;
+                        }
+                        // Up-Right Diagnal
+                        if (direction == 8)
+                        {
+                            addition = -7;
+                            maxMin = 0;
                         }
 
+                        while (count < 7)
+                        {
+                            currentMove += addition;
+                            if (maxMin == 0)
+                            {
+                                if (currentMove >= maxMin)
+                                {
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    queenMoves.push_back(currentMove);
+
+                                }
+                            }
+                            else
+                            {
+                                if (currentMove <= maxMin)
+                                {
+                                    if (board[currentMove].team != -1)
+                                    {
+                                        // Loop will break because piece is in the way
+                                        count = 100;
+                                    }
+
+                                    // Add this move to list of valid moves
+                                    queenMoves.push_back(currentMove);
+
+                                }
+                            }
+
+                        }
+                        direction++;
+                    }
+
+                    for (auto it = queenMoves.begin(); it != queenMoves.end(); it++)
+                    {
+                        if (*it == n)
+                            return true;
                     }
                     return false;
                 }
@@ -269,8 +518,10 @@ namespace JCode
                         {
                             if (newRow == rows[i] && newColumn == columns[i])
                             {
-                                cout << "Returned True";
-                                return true;
+                                if (board[n].team == -1)
+                                {
+                                    return true;
+                                }
                             }
 
                         }
@@ -298,8 +549,10 @@ namespace JCode
                         {
                             if (newRow == rows[i] && newColumn == columns[i])
                             {
-                                cout << "Returned True";
-                                return true;
+                                if (board[n].team == -1)
+                                {
+                                    return true;
+                                }
                             }
 
                         }
@@ -371,8 +624,10 @@ namespace JCode
                         {
                             if (newRow == rows[i] && newColumn == columns[i])
                             {
-                                cout << "Returned True";
-                                return true;
+                                if (board[n].team == -1)
+                                {
+                                    return true;
+                                }
                             }
 
                         }
@@ -400,8 +655,10 @@ namespace JCode
                         {
                             if (newRow == rows[i] && newColumn == columns[i])
                             {
-                                cout << "Returned True";
-                                return true;
+                                if (board[n].team == -1)
+                                {
+                                    return true;
+                                }
                             }
                         }
                     }
@@ -451,35 +708,7 @@ namespace JCode
 
     };
 
-    class ChessBoard
-    {
-        public:
-
-            // Default Constructor
-            ChessBoard() = default;
-            ChessBoard(int arr[]);
-            ChessPiece board[64] = {
-
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1),
-                ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1), ChessPiece("", 1)
-            };
-
-            // Constructor
-            ChessBoard(ChessPiece guiBoard[])
-            {
-
-                for (int i = 0; i < 8; i++)
-                {
-                    board[i] = guiBoard[i];
-                }
-            }
-    };
+    
 
     void RenderJoelUI()
     {
@@ -518,9 +747,6 @@ namespace JCode
            ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1), ChessPiece("U", 1),
            ChessPiece("V", 1), ChessPiece("W", 1), ChessPiece("Z", 1), ChessPiece("Y", 1), ChessPiece("X", 1), ChessPiece("Z", 1), ChessPiece("W", 1), ChessPiece("V", 1)
         };
-
-        // Copy of chess board
-        ChessBoard logicBoard = ChessBoard(board);
 
 
         for (int n = 0; n < IM_ARRAYSIZE(board); n++)
